@@ -1450,10 +1450,10 @@
     // 导出用户数据
     function exportUsers() {
         // 获取当前搜索条件
-        const keyword = document.getElementById('userKeyword').value;
-        const role = document.getElementById('userRole').value;
-        const status = document.getElementById('userStatus').value;
-        const date = document.getElementById('userDate').value;
+        const keyword = document.getElementById('userSearchKeyword').value;
+        const role = document.getElementById('userRoleFilter').value;
+        const status = document.getElementById('userStatusFilter').value;
+        const date = document.getElementById('userDateFilter').value;
         
         // 构建查询参数
         const params = new URLSearchParams();
