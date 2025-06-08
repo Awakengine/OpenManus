@@ -1836,8 +1836,11 @@ class OpenManusWebUI:
             await agent.run(message)
 
             # Get the last assistant message
-            last_message = agent.memory.get_messages()[-1]
-            return last_message.content or "抱歉，我无法生成回复。"
+            if agent.memory.messages:
+                last_message = agent.memory.messages[-1]
+                return last_message.content or "抱歉，我无法生成回复。"
+            else:
+                return "抱歉，我无法生成回复。"
 
         except Exception as e:
             logger.error(f"Agent processing error: {e}")
@@ -1883,30 +1886,67 @@ class OpenManusWebUI:
                         )
                     )
 
-            # Process the message and yield chunks
-            # For now, we'll simulate streaming by processing the full response
-            # and then yielding it in chunks
+            # Process the message with real-time streaming
             import asyncio
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             
-            # Run the agent
-            loop.run_until_complete(agent.run(message))
-            
-            # Get the last assistant message
-            last_message = agent.memory.get_messages()[-1]
-            response = last_message.content or "抱歉，我无法生成回复。"
-            
-            loop.close()
-            
-            # Simulate streaming by yielding the response in chunks
-            chunk_size = 10  # Characters per chunk
-            for i in range(0, len(response), chunk_size):
-                chunk = response[i:i + chunk_size]
-                yield chunk
-                # Add a small delay to simulate real streaming
-                import time
-                time.sleep(0.05)
+            try:
+                # Start the agent processing
+                if agent.state != AgentState.IDLE:
+                    raise RuntimeError(f"Cannot run agent from state: {agent.state}")
+
+                agent.state = AgentState.RUNNING
+                
+                # Yield initial thinking message
+                yield "🤔 开始思考...\n\n"
+                
+                # Add user message to memory
+                agent.update_memory("user", message)
+                
+                while (agent.current_step < agent.max_steps and agent.state != AgentState.FINISHED):
+                    agent.current_step += 1
+                    
+                    # Yield step information
+                    yield f"📝 **步骤 {agent.current_step}:**\n"
+                    
+                    # Execute the step and capture the result
+                    step_result = loop.run_until_complete(agent.step())
+                    
+                    # Yield the step result
+                    if step_result:
+                        yield f"{step_result}\n\n"
+                    
+                    # Check if agent finished
+                    if agent.state == AgentState.FINISHED:
+                        break
+                        
+                    # Check for stuck state
+                    if agent.is_stuck():
+                        agent.handle_stuck_state()
+                        yield "⚠️ 检测到重复响应，正在调整策略...\n\n"
+                
+                # Get the final response
+                if agent.memory.messages:
+                    last_message = agent.memory.messages[-1]
+                    if last_message.role == 'assistant' and last_message.content:
+                        yield "\n✅ **最终回复:**\n"
+                        # Stream the final response in chunks for better UX
+                        final_response = last_message.content
+                        chunk_size = 20
+                        for i in range(0, len(final_response), chunk_size):
+                            chunk = final_response[i:i + chunk_size]
+                            yield chunk
+                            import time
+                            time.sleep(0.03)
+                
+                if agent.current_step >= agent.max_steps:
+                    yield f"\n⏰ 已达到最大步数限制 ({agent.max_steps})\n"
+                    
+            finally:
+                agent.state = AgentState.IDLE
+                agent.current_step = 0
+                loop.close()
 
         except Exception as e:
             logger.error(f"Agent streaming error: {e}")
