@@ -680,6 +680,7 @@ class LLM:
         tools: Optional[List[dict]] = None,
         tool_choice: TOOL_CHOICE_TYPE = ToolChoice.AUTO,  # type: ignore
         temperature: Optional[float] = None,
+        stream: bool = False,
         **kwargs,
     ) -> ChatCompletionMessage | None:
         """
@@ -759,10 +760,59 @@ class LLM:
                     temperature if temperature is not None else self.temperature
                 )
 
-            params["stream"] = False  # Always use non-streaming for tool requests
-            response: ChatCompletion = await self.client.chat.completions.create(
-                **params
-            )
+            params["stream"] = stream  # Support streaming for tool requests
+            
+            if stream:
+                # Handle streaming response
+                response_stream = await self.client.chat.completions.create(**params)
+                collected_content = ""
+                collected_tool_calls = []
+                
+                async for chunk in response_stream:
+                    if chunk.choices and chunk.choices[0].delta:
+                        delta = chunk.choices[0].delta
+                        if delta.content:
+                            collected_content += delta.content
+                            print(delta.content, end="", flush=True)
+                        if delta.tool_calls:
+                            # Handle tool calls in streaming
+                            for tool_call in delta.tool_calls:
+                                if len(collected_tool_calls) <= tool_call.index:
+                                    collected_tool_calls.extend([None] * (tool_call.index + 1 - len(collected_tool_calls)))
+                                
+                                if collected_tool_calls[tool_call.index] is None:
+                                    collected_tool_calls[tool_call.index] = {
+                                        "id": tool_call.id,
+                                        "type": tool_call.type,
+                                        "function": {"name": tool_call.function.name if tool_call.function else "", "arguments": ""}
+                                    }
+                                
+                                if tool_call.function and tool_call.function.arguments:
+                                    collected_tool_calls[tool_call.index]["function"]["arguments"] += tool_call.function.arguments
+                
+                print()  # Newline after streaming
+                
+                # Create a mock response object
+                class MockMessage:
+                    def __init__(self, content, tool_calls):
+                        self.content = content
+                        self.tool_calls = [type('ToolCall', (), tc) for tc in tool_calls] if tool_calls else None
+                        if self.tool_calls:
+                            for i, tc in enumerate(self.tool_calls):
+                                tc.function = type('Function', (), collected_tool_calls[i]["function"])
+                                tc.id = collected_tool_calls[i]["id"]
+                                tc.type = collected_tool_calls[i]["type"]
+                
+                # Estimate token usage for streaming
+                completion_tokens = self.count_tokens(collected_content)
+                self.total_completion_tokens += completion_tokens
+                
+                return MockMessage(collected_content, collected_tool_calls)
+            else:
+                # Non-streaming response
+                response: ChatCompletion = await self.client.chat.completions.create(
+                    **params
+                )
 
             # Check if response is valid
             if not response.choices or not response.choices[0].message:
@@ -770,12 +820,12 @@ class LLM:
                 # raise ValueError("Invalid or empty response from LLM")
                 return None
 
-            # Update token counts
-            self.update_token_count(
-                response.usage.prompt_tokens, response.usage.completion_tokens
-            )
+                # Update token counts
+                self.update_token_count(
+                    response.usage.prompt_tokens, response.usage.completion_tokens
+                )
 
-            return response.choices[0].message
+                return response.choices[0].message
 
         except TokenLimitExceeded:
             # Re-raise token limit errors without logging

@@ -53,6 +53,7 @@ class ToolCallAgent(ReActAgent):
                 ),
                 tools=self.available_tools.to_params(),
                 tool_choice=self.tool_choices,
+                stream=True,  # Enable streaming for real-time response
             )
         except ValueError:
             raise

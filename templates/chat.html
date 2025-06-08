@@ -2,7 +2,240 @@
 
 {% block title %}OpenManus - AI 助手{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* 顶部提示框样式 */
+    .tips-container {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1050;
+        width: auto;
+        max-width: 500px;
+        min-width: 300px;
+    }
+
+    .tips-alert {
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 500;
+        animation: slideDown 0.3s ease-out;
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .tips-alert::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: currentColor;
+    }
+
+    .tips-alert-success {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        color: #155724;
+        border-left: 4px solid #28a745;
+    }
+
+    .tips-alert-error {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        color: #721c24;
+        border-left: 4px solid #dc3545;
+    }
+
+    .tips-alert-warning {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        color: #856404;
+        border-left: 4px solid #ffc107;
+    }
+
+    .tips-alert-info {
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        color: #0c5460;
+        border-left: 4px solid #17a2b8;
+    }
+
+    .tips-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+    }
+
+    .tips-icon {
+        font-size: 16px;
+        margin-right: 4px;
+    }
+
+    .tips-close {
+        background: none;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        color: inherit;
+        opacity: 0.7;
+        padding: 0;
+        margin-left: 10px;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+    }
+
+    .tips-close:hover {
+        opacity: 1;
+        background: rgba(0, 0, 0, 0.1);
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+    }
+
+    .tips-alert.removing {
+        animation: slideUp 0.3s ease-out forwards;
+    }
+
+    /* 确认对话框样式 */
+    .confirm-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .confirm-dialog {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        animation: scaleIn 0.3s ease-out;
+    }
+
+    .confirm-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .confirm-icon {
+        font-size: 24px;
+        margin-right: 12px;
+        color: #ffc107;
+    }
+
+    .confirm-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .confirm-message {
+        color: #666;
+        margin-bottom: 24px;
+        line-height: 1.5;
+    }
+
+    .confirm-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+    }
+
+    .confirm-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .confirm-btn-cancel {
+        background: #f8f9fa;
+        color: #6c757d;
+        border: 1px solid #dee2e6;
+    }
+
+    .confirm-btn-cancel:hover {
+        background: #e9ecef;
+    }
+
+    .confirm-btn-confirm {
+        background: #dc3545;
+        color: white;
+    }
+
+    .confirm-btn-confirm:hover {
+        background: #c82333;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
+<!-- 顶部提示框容器 -->
+<div id="tipsContainer" class="tips-container"></div>
 <div class="row g-0">
     <!-- Sidebar -->
     <div class="col-md-3 sidebar" id="sidebar">
@@ -260,10 +493,12 @@
 }
 .conversation-item:hover {
     background-color: #f8f9fa;
+    transform: none !important;
 }
 .conversation-item.active {
     background-color: #e3f2fd;
     border-left: 4px solid #2196f3;
+    transform: none !important;
 }
 .conversation-content {
     flex: 1;
@@ -307,6 +542,128 @@
 let currentConversationId = null;
 let conversations = [];
 let isGuest = false;
+let pendingMessage = '';
+
+// 顶部提示框功能
+function showTips(message, type = 'info', duration = 3000) {
+    const container = document.getElementById('tipsContainer');
+    if (!container) return;
+    
+    // 创建提示框元素
+    const alert = document.createElement('div');
+    alert.className = `tips-alert tips-alert-${type}`;
+    
+    // 根据类型设置图标
+    let icon = '';
+    switch(type) {
+        case 'success':
+            icon = '✓';
+            break;
+        case 'error':
+            icon = '✗';
+            break;
+        case 'warning':
+            icon = '⚠';
+            break;
+        case 'info':
+        default:
+            icon = 'ℹ';
+            break;
+    }
+    
+    alert.innerHTML = `
+        <div class="tips-content">
+            <span class="tips-icon">${icon}</span>
+            <span class="tips-message">${message}</span>
+        </div>
+        <button class="tips-close" onclick="closeTips(this)">&times;</button>
+    `;
+    
+    // 添加到容器
+    container.appendChild(alert);
+    
+    // 自动关闭
+    if (duration > 0) {
+        setTimeout(() => {
+            closeTips(alert.querySelector('.tips-close'));
+        }, duration);
+    }
+    
+    return alert;
+}
+
+// 关闭提示框
+function closeTips(closeBtn) {
+    const alert = closeBtn.closest('.tips-alert');
+    if (alert) {
+        alert.classList.add('removing');
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.parentNode.removeChild(alert);
+            }
+        }, 300);
+    }
+}
+
+// 确认对话框
+function showConfirm(message, title = '确认操作', onConfirm = null, onCancel = null) {
+    return new Promise((resolve) => {
+        // 创建遮罩层
+        const overlay = document.createElement('div');
+        overlay.className = 'confirm-overlay';
+        
+        overlay.innerHTML = `
+            <div class="confirm-dialog">
+                <div class="confirm-header">
+                    <span class="confirm-icon">⚠</span>
+                    <h4 class="confirm-title">${title}</h4>
+                </div>
+                <div class="confirm-message">${message}</div>
+                <div class="confirm-buttons">
+                    <button class="confirm-btn confirm-btn-cancel">取消</button>
+                    <button class="confirm-btn confirm-btn-confirm">确认</button>
+                </div>
+            </div>
+        `;
+        
+        // 添加到页面
+        document.body.appendChild(overlay);
+        
+        // 绑定事件
+        const cancelBtn = overlay.querySelector('.confirm-btn-cancel');
+        const confirmBtn = overlay.querySelector('.confirm-btn-confirm');
+        
+        const cleanup = () => {
+            overlay.style.animation = 'fadeOut 0.3s ease-out';
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+            }, 300);
+        };
+        
+        cancelBtn.onclick = () => {
+            cleanup();
+            if (onCancel) onCancel();
+            resolve(false);
+        };
+        
+        confirmBtn.onclick = () => {
+            cleanup();
+            if (onConfirm) onConfirm();
+            resolve(true);
+        };
+        
+        // 点击遮罩层关闭
+        overlay.onclick = (e) => {
+            if (e.target === overlay) {
+                cleanup();
+                if (onCancel) onCancel();
+                resolve(false);
+            }
+        };
+    });
+}
 
 $(document).ready(function() {
     // 检查是否为游客模式
@@ -514,20 +871,20 @@ function addMessage(type, content) {
     const messagesContainer = $('#chatMessages');
     $('#welcomeMessage').hide();
     
-    const messageHtml = `
-        <div class="message ${type}-message">
-            <div class="message-content">
-                <div class="message-header">
-                    <i class="fas ${type === 'user' ? 'fa-user' : type === 'assistant' ? 'fa-robot' : 'fa-info-circle'}"></i>
-                    <span class="message-sender">${type === 'user' ? '您' : type === 'assistant' ? 'OpenManus' : '系统'}</span>
-                    <span class="message-time">${new Date().toLocaleTimeString()}</span>
-                </div>
-                <div class="message-text">${content}</div>
-            </div>
-        </div>
-    `;
+    const messageDiv = $('<div>').addClass(`message ${type}-message`);
+    const messageContent = $('<div>').addClass('message-content');
+    const messageHeader = $('<div>').addClass('message-header');
     
-    messagesContainer.append(messageHtml);
+    const icon = $('<i>').addClass(`fas ${type === 'user' ? 'fa-user' : type === 'assistant' ? 'fa-robot' : 'fa-info-circle'}`);
+    const sender = $('<span>').addClass('message-sender').text(type === 'user' ? '您' : type === 'assistant' ? 'OpenManus' : '系统');
+    const time = $('<span>').addClass('message-time').text(new Date().toLocaleTimeString());
+    const messageText = $('<div>').addClass('message-text').text(content);
+    
+    messageHeader.append(icon, sender, time);
+    messageContent.append(messageHeader, messageText);
+    messageDiv.append(messageContent);
+    
+    messagesContainer.append(messageDiv);
     messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
 }
 
@@ -535,20 +892,24 @@ function addStreamingMessage(type, content, messageId) {
     const messagesContainer = $('#chatMessages');
     $('#welcomeMessage').hide();
     
-    const messageHtml = `
-        <div class="message ${type}-message" id="${messageId}">
-            <div class="message-content">
-                <div class="message-header">
-                    <i class="fas ${type === 'user' ? 'fa-user' : type === 'assistant' ? 'fa-robot' : 'fa-info-circle'}"></i>
-                    <span class="message-sender">${type === 'user' ? '您' : type === 'assistant' ? 'OpenManus' : '系统'}</span>
-                    <span class="message-time">${new Date().toLocaleTimeString()}</span>
-                </div>
-                <div class="message-text"><span class="streaming-content">${content}</span><span class="cursor">▋</span></div>
-            </div>
-        </div>
-    `;
+    const messageDiv = $('<div>').addClass(`message ${type}-message`).attr('id', messageId);
+    const messageContent = $('<div>').addClass('message-content');
+    const messageHeader = $('<div>').addClass('message-header');
     
-    messagesContainer.append(messageHtml);
+    const icon = $('<i>').addClass(`fas ${type === 'user' ? 'fa-user' : type === 'assistant' ? 'fa-robot' : 'fa-info-circle'}`);
+    const sender = $('<span>').addClass('message-sender').text(type === 'user' ? '您' : type === 'assistant' ? 'OpenManus' : '系统');
+    const time = $('<span>').addClass('message-time').text(new Date().toLocaleTimeString());
+    
+    const messageText = $('<div>').addClass('message-text');
+    const streamingContent = $('<span>').addClass('streaming-content').text(content);
+    const cursor = $('<span>').addClass('cursor').text('▋');
+    messageText.append(streamingContent, cursor);
+    
+    messageHeader.append(icon, sender, time);
+    messageContent.append(messageHeader, messageText);
+    messageDiv.append(messageContent);
+    
+    messagesContainer.append(messageDiv);
     messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
 }
 
@@ -616,20 +977,22 @@ function renderConversations() {
         container.append(convHtml);
     });
     
-    // 绑定点击事件
-    $('.conversation-item .conversation-content').click(function() {
+    // 使用事件委托绑定点击事件
+    $('#conversationsList').off('click', '.conversation-item .conversation-content').on('click', '.conversation-item .conversation-content', function() {
         const convId = $(this).parent().data('id');
         selectConversation(convId);
     });
     
-    // 绑定删除按钮事件
-    $('.delete-conversation').click(function(e) {
+    // 使用事件委托绑定删除按钮事件
+    $('#conversationsList').off('click', '.delete-conversation').on('click', '.delete-conversation', function(e) {
         e.stopPropagation();
         const convId = $(this).data('id');
         const conv = conversations.find(c => c.id === convId);
-        if (confirm(`确定要删除对话 "${conv.title}" 吗？此操作不可撤销。`)) {
-            deleteConversation(convId);
-        }
+        showConfirm(
+            `确定要删除对话 "${conv.title}" 吗？此操作不可撤销。`,
+            '删除对话',
+            () => deleteConversation(convId)
+        );
     });
 }
 
@@ -685,13 +1048,13 @@ function deleteConversation(convId) {
                 renderConversations();
                 
                 // 显示成功消息
-                showMessage('对话删除成功', 'success');
+                showTips('对话删除成功', 'success');
             } else {
-                showMessage(response.message || '删除对话失败', 'error');
+                showTips(response.message || '删除对话失败', 'error');
             }
         },
         error: function() {
-            showMessage('删除对话失败，请稍后重试', 'error');
+            showTips('删除对话失败，请稍后重试', 'error');
         }
     });
 }
@@ -713,11 +1076,11 @@ function createNewConversation(title) {
                 $('#chatMessages').empty();
                 $('#welcomeMessage').show();
             } else {
-                alert('创建对话失败：' + (response.message || '未知错误'));
+                showTips('创建对话失败：' + (response.message || '未知错误'), 'error');
             }
         },
         error: function() {
-            alert('创建对话失败，请重试');
+            showTips('创建对话失败，请重试', 'error');
         }
     });
 }
@@ -743,11 +1106,11 @@ function createNewConversationAndSend(message) {
                 // 立即发送消息
                 sendMessage();
             } else {
-                alert('创建对话失败：' + (response.message || '未知错误'));
+                showTips('创建对话失败：' + (response.message || '未知错误'), 'error');
             }
         },
         error: function() {
-            alert('创建对话失败，请重试');
+            showTips('创建对话失败，请重试', 'error');
         }
     });
 }
@@ -757,26 +1120,7 @@ function enableChat() {
     $('#sendBtn').prop('disabled', false);
 }
 
-function showMessage(message, type = 'info') {
-    // 创建提示消息元素
-    const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-info';
-    const alertHtml = `
-        <div class="alert ${alertClass} alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    `;
-    
-    // 添加到页面
-    $('body').append(alertHtml);
-    
-    // 3秒后自动消失
-    setTimeout(function() {
-        $('.alert').fadeOut(function() {
-            $(this).remove();
-        });
-    }, 3000);
-}
+
 
 function checkUserAuth() {
     $.ajax({
@@ -811,7 +1155,7 @@ function setupLoginEvents() {
         const remember = $('#remember').is(':checked');
 
         if (!username || !password) {
-            alert('请输入用户名和密码');
+            showTips('请输入用户名和密码', 'warning');
             return;
         }
 
@@ -832,11 +1176,11 @@ function setupLoginEvents() {
                     // 发送之前输入的消息
                     sendMessage();
                 } else {
-                    alert(response.message || '登录失败');
+                    showTips(response.message || '登录失败', 'error');
                 }
             },
             error: function() {
-                alert('登录请求失败，请重试');
+                showTips('登录请求失败，请重试', 'error');
             }
         });
     });
@@ -854,12 +1198,12 @@ function setupLoginEvents() {
         const confirmPassword = $('#confirmPassword').val();
 
         if (!username || !password || !confirmPassword) {
-            alert('请填写所有字段');
+            showTips('请填写所有字段', 'warning');
             return;
         }
 
         if (password !== confirmPassword) {
-            alert('密码不匹配');
+            showTips('密码不匹配', 'warning');
             return;
         }
 
@@ -873,14 +1217,14 @@ function setupLoginEvents() {
             success: function(response) {
                 if (response.code === 200) {
                     $('#registerModal').modal('hide');
-                    alert('注册成功！请登录');
+                    showTips('注册成功！请登录', 'success');
                     $('#loginModal').modal('show');
                 } else {
-                    alert(response.message || '注册失败');
+                    showTips(response.message || '注册失败', 'error');
                 }
             },
             error: function() {
-                alert('注册请求失败，请重试');
+                showTips('注册请求失败，请重试', 'error');
             }
         });
     });
