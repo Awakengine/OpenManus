@@ -1,0 +1,604 @@
+{% extends "base.html" %}
+
+{% block title %}OpenManus - AI 助手{% endblock %}
+
+{% block content %}
+<div class="row g-0">
+    <!-- Sidebar -->
+    <div class="col-md-3 sidebar" id="sidebar">
+        <div class="p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-comments me-2"></i>对话列表
+                </h5>
+                <button class="btn btn-outline-secondary btn-sm" id="newChatBtn">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div id="conversationsList">
+                <!-- Conversations will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Chat Area -->
+    <div class="col-md-9">
+        <div class="chat-container">
+            <!-- Chat Header -->
+            <div class="bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0" id="chatTitle">
+                        <i class="fas fa-robot me-2 text-primary"></i>
+                        <span id="conversationTitle">选择一个对话或开始新对话</span>
+                    </h5>
+                    <small class="text-muted" id="chatSubtitle">OpenManus AI 助手</small>
+                </div>
+                <div>
+                    <div class="user-info" id="user-info" style="display: none;">
+                        <span id="username-display"></span>
+                        <a href="/admin" id="admin-link" style="display: none; margin-right: 10px; color: #667eea; text-decoration: none;">管理面板</a>
+                        <button onclick="logout()" class="logout-btn">退出登录</button>
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm d-md-none" id="toggleSidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <a href="/" class="btn btn-outline-primary btn-sm ms-2">
+                        <i class="fas fa-home me-1"></i>首页
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chatMessages">
+                <div class="text-center text-muted" id="welcomeMessage">
+                    <div class="mb-4">
+                        <i class="fas fa-robot fa-4x text-primary mb-3"></i>
+                        <h3>欢迎使用 OpenManus</h3>
+                        <p class="lead">您的智能 AI 助手已准备就绪！</p>
+                        <div class="row mt-4">
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100 border-0 bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-code fa-2x text-primary mb-2"></i>
+                                        <h6>代码开发</h6>
+                                        <small>编写、调试和解释代码</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100 border-0 bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-search fa-2x text-primary mb-2"></i>
+                                        <h6>研究分析</h6>
+                                        <small>查找信息和分析数据</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100 border-0 bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-tasks fa-2x text-primary mb-2"></i>
+                                        <h6>任务自动化</h6>
+                                        <small>自动化工作流程和流程</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Loading Indicator -->
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">加载中...</span>
+                </div>
+                <p class="mt-2 text-muted">OpenManus 正在思考...</p>
+            </div>
+            
+            <!-- Chat Input -->
+            <div class="chat-input">
+                <form id="chatForm">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="messageInput" 
+                               placeholder="在此输入您的消息...">
+                        <button class="btn btn-primary" type="submit" id="sendBtn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        OpenManus 可能会出错。请验证重要信息。
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Chat Modal -->
+<div class="modal fade" id="newChatModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>新建对话
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newChatForm">
+                    <div class="mb-3">
+                        <label for="chatTitleInput" class="form-label">对话标题</label>
+                        <input type="text" class="form-control" id="chatTitleInput" 
+                               placeholder="为此对话输入标题" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="createChatBtn">
+                    <i class="fas fa-plus me-2"></i>创建
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-sign-in-alt me-2"></i>登录
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>默认账户：</strong> admin / admin123
+                </div>
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">密码</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label class="form-check-label" for="remember">记住我</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-outline-primary" id="guestBtn">
+                    <i class="fas fa-user me-2"></i>游客访问
+                </button>
+                <button type="button" class="btn btn-primary" id="loginBtn">
+                    <i class="fas fa-sign-in-alt me-2"></i>登录
+                </button>
+                <button type="button" class="btn btn-success" id="registerBtn">
+                    <i class="fas fa-user-plus me-2"></i>注册
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>注册
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="registerForm">
+                    <div class="mb-3">
+                        <label for="regUsername" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="regUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="regPassword" class="form-label">密码</label>
+                        <input type="password" class="form-control" id="regPassword" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">确认密码</label>
+                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success" id="submitRegisterBtn">
+                    <i class="fas fa-user-plus me-2"></i>注册
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentConversationId = null;
+let conversations = [];
+let isGuest = false;
+
+$(document).ready(function() {
+    // 检查是否为游客模式
+    const urlParams = new URLSearchParams(window.location.search);
+    isGuest = urlParams.get('guest') === 'true';
+    
+    if (isGuest) {
+        // 游客模式，创建临时会话
+        $('#conversationTitle').text('游客模式');
+        $('#chatSubtitle').text('游客访问 - 数据不会保存');
+        enableChat();
+    } else {
+        loadConversations();
+        checkUserAuth();
+    }
+    
+    // 聊天表单提交
+    $('#chatForm').submit(function(e) {
+        e.preventDefault();
+        
+        // 检查登录状态
+        if (!isGuest && !currentConversationId) {
+            checkLoginAndSend();
+            return;
+        }
+        
+        sendMessage();
+    });
+    
+    // 新建对话
+    $('#newChatBtn').click(function() {
+        if (isGuest) {
+            alert('游客模式下无法创建新对话');
+            return;
+        }
+        $('#newChatModal').modal('show');
+    });
+    
+    // 创建新对话
+    $('#createChatBtn').click(function() {
+        const title = $('#chatTitleInput').val().trim();
+        if (!title) {
+            alert('请输入对话标题');
+            return;
+        }
+        
+        createNewConversation(title);
+    });
+    
+    // 侧边栏切换
+    $('#toggleSidebar').click(function() {
+        $('#sidebar').toggleClass('show');
+    });
+    
+    // 登录相关事件
+    setupLoginEvents();
+});
+
+function checkLoginAndSend() {
+    // 检查用户是否已登录
+    $.ajax({
+        url: '/api/check-auth',
+        method: 'GET',
+        success: function(response) {
+            if (response.authenticated) {
+                // 已登录，直接发送消息
+                sendMessage();
+            } else {
+                // 未登录，显示登录框
+                $('#loginModal').modal('show');
+            }
+        },
+        error: function() {
+            // 检查失败，显示登录框
+            $('#loginModal').modal('show');
+        }
+    });
+}
+
+function sendMessage() {
+    const message = $('#messageInput').val().trim();
+    if (!message) return;
+    
+    // 添加用户消息到界面
+    addMessage('user', message);
+    $('#messageInput').val('');
+    
+    // 显示加载指示器
+    $('#loadingIndicator').show();
+    
+    // 发送消息到后端
+    const endpoint = isGuest ? '/api/chat-guest' : '/api/chat';
+    const data = isGuest ? { message: message } : { 
+        message: message, 
+        conversation_id: currentConversationId 
+    };
+    
+    $.ajax({
+        url: endpoint,
+        method: 'POST',
+        data: data,
+        success: function(response) {
+            $('#loadingIndicator').hide();
+            if (response.success) {
+                addMessage('assistant', response.response);
+                if (!isGuest && response.conversation_id) {
+                    currentConversationId = response.conversation_id;
+                    loadConversations();
+                }
+            } else {
+                addMessage('system', '抱歉，发生了错误：' + (response.message || '未知错误'));
+            }
+        },
+        error: function() {
+            $('#loadingIndicator').hide();
+            addMessage('system', '网络错误，请重试');
+        }
+    });
+}
+
+function addMessage(type, content) {
+    const messagesContainer = $('#chatMessages');
+    $('#welcomeMessage').hide();
+    
+    const messageHtml = `
+        <div class="message ${type}-message">
+            <div class="message-content">
+                <div class="message-header">
+                    <i class="fas ${type === 'user' ? 'fa-user' : type === 'assistant' ? 'fa-robot' : 'fa-info-circle'}"></i>
+                    <span class="message-sender">${type === 'user' ? '您' : type === 'assistant' ? 'OpenManus' : '系统'}</span>
+                    <span class="message-time">${new Date().toLocaleTimeString()}</span>
+                </div>
+                <div class="message-text">${content}</div>
+            </div>
+        </div>
+    `;
+    
+    messagesContainer.append(messageHtml);
+    messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
+}
+
+function loadConversations() {
+    if (isGuest) return;
+    
+    $.ajax({
+        url: '/api/conversations',
+        method: 'GET',
+        success: function(response) {
+            if (response.success) {
+                conversations = response.conversations;
+                renderConversations();
+                enableChat();
+            }
+        },
+        error: function() {
+            console.error('Failed to load conversations');
+        }
+    });
+}
+
+function renderConversations() {
+    const container = $('#conversationsList');
+    container.empty();
+    
+    if (conversations.length === 0) {
+        container.append('<p class="text-muted small">暂无对话</p>');
+        return;
+    }
+    
+    conversations.forEach(conv => {
+        const isActive = conv.id === currentConversationId;
+        const convHtml = `
+            <div class="conversation-item ${isActive ? 'active' : ''}" data-id="${conv.id}">
+                <div class="conversation-title">${conv.title}</div>
+                <div class="conversation-time">${new Date(conv.created_at).toLocaleDateString()}</div>
+            </div>
+        `;
+        container.append(convHtml);
+    });
+    
+    // 绑定点击事件
+    $('.conversation-item').click(function() {
+        const convId = $(this).data('id');
+        selectConversation(convId);
+    });
+}
+
+function selectConversation(convId) {
+    currentConversationId = convId;
+    const conv = conversations.find(c => c.id === convId);
+    if (conv) {
+        $('#conversationTitle').text(conv.title);
+        loadMessages(convId);
+    }
+    renderConversations();
+}
+
+function loadMessages(convId) {
+    $.ajax({
+        url: `/api/conversations/${convId}/messages`,
+        method: 'GET',
+        success: function(response) {
+            if (response.success) {
+                const messagesContainer = $('#chatMessages');
+                messagesContainer.empty();
+                $('#welcomeMessage').hide();
+                
+                response.messages.forEach(msg => {
+                    addMessage(msg.role, msg.content);
+                });
+            }
+        },
+        error: function() {
+            console.error('Failed to load messages');
+        }
+    });
+}
+
+function createNewConversation(title) {
+    $.ajax({
+        url: '/api/conversations',
+        method: 'POST',
+        data: { title: title },
+        success: function(response) {
+            if (response.success) {
+                $('#newChatModal').modal('hide');
+                $('#chatTitleInput').val('');
+                currentConversationId = response.conversation_id;
+                $('#conversationTitle').text(title);
+                loadConversations();
+                
+                // 清空消息区域
+                $('#chatMessages').empty();
+                $('#welcomeMessage').show();
+            } else {
+                alert('创建对话失败：' + (response.message || '未知错误'));
+            }
+        },
+        error: function() {
+            alert('创建对话失败，请重试');
+        }
+    });
+}
+
+function enableChat() {
+    $('#messageInput').prop('disabled', false);
+    $('#sendBtn').prop('disabled', false);
+}
+
+function checkUserAuth() {
+    $.ajax({
+        url: '/api/check-auth',
+        method: 'GET',
+        success: function(response) {
+            if (response.authenticated) {
+                $('#user-info').show();
+                $('#username-display').text(response.username);
+                
+                // 如果是管理员或超级管理员，显示管理面板链接
+                if (response.role === 'admin' || response.role === 'super_admin') {
+                    if ($('#admin-link').length === 0) {
+                        $('#user-info').append('<a href="/admin" id="admin-link" class="btn btn-sm btn-outline-primary ms-2"><i class="fas fa-cog me-1"></i>管理面板</a>');
+                    }
+                }
+            }
+        },
+        error: function() {
+            console.log('用户未登录');
+        }
+    });
+}
+
+function setupLoginEvents() {
+    // 登录按钮
+    $('#loginBtn').click(function() {
+        const username = $('#username').val();
+        const password = $('#password').val();
+        const remember = $('#remember').is(':checked');
+
+        if (!username || !password) {
+            alert('请输入用户名和密码');
+            return;
+        }
+
+        $.ajax({
+            url: '/login',
+            method: 'POST',
+            data: {
+                username: username,
+                password: password,
+                remember: remember
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#loginModal').modal('hide');
+                    isGuest = false;
+                    loadConversations();
+                    checkUserAuth();
+                    // 发送之前输入的消息
+                    sendMessage();
+                } else {
+                    alert(response.message || '登录失败');
+                }
+            },
+            error: function() {
+                alert('登录请求失败，请重试');
+            }
+        });
+    });
+
+    // 注册按钮
+    $('#registerBtn').click(function() {
+        $('#loginModal').modal('hide');
+        $('#registerModal').modal('show');
+    });
+
+    // 注册提交
+    $('#submitRegisterBtn').click(function() {
+        const username = $('#regUsername').val();
+        const password = $('#regPassword').val();
+        const confirmPassword = $('#confirmPassword').val();
+
+        if (!username || !password || !confirmPassword) {
+            alert('请填写所有字段');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            alert('密码不匹配');
+            return;
+        }
+
+        $.ajax({
+            url: '/register',
+            method: 'POST',
+            data: {
+                username: username,
+                password: password
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#registerModal').modal('hide');
+                    alert('注册成功！请登录');
+                    $('#loginModal').modal('show');
+                } else {
+                    alert(response.message || '注册失败');
+                }
+            },
+            error: function() {
+                alert('注册请求失败，请重试');
+            }
+        });
+    });
+
+    // 游客访问
+    $('#guestBtn').click(function() {
+        $('#loginModal').modal('hide');
+        isGuest = true;
+        $('#conversationTitle').text('游客模式');
+        $('#chatSubtitle').text('游客访问 - 数据不会保存');
+        // 发送之前输入的消息
+        sendMessage();
+    });
+}
+</script>
+{% endblock %}

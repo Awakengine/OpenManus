@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超级管理员面板 - OpenManus</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #333;
+            margin: 0;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info span {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #ff3742;
+        }
+
+        .tabs {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid #eee;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .tab-button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-button:hover:not(.active) {
+            background: #f8f9fa;
+        }
+
+        .tab-content {
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .user-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .user-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .user-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .user-info-item strong {
+            color: #333;
+        }
+
+        .user-info-item span {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff3742;
+        }
+
+        .btn-warning {
+            background: #ffa502;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #ff9500;
+        }
+
+        .btn-success {
+            background: #2ed573;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #26d467;
+        }
+
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .config-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .config-selector label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .config-selector select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .config-editor {
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .config-file {
+            margin-bottom: 20px;
+        }
+
+        .config-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .config-header h4 {
+            color: #333;
+            margin: 0;
+        }
+
+        .file-type {
+            color: #666;
+            font-size: 12px;
+            font-weight: normal;
+        }
+
+        .save-btn {
+            background: #2ed573;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .save-btn:hover {
+            background: #26d467;
+        }
+
+        .config-textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+        }
+
+        .config-textarea:focus {
+            outline: none;
+            box-shadow: inset 0 0 0 2px #667eea;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="header">
+            <h1>超级管理员面板</h1>
+            <div class="user-info">
+                <span id="current-user">加载中...</span>
+                <button class="logout-btn" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchTab('users')">用户管理</button>
+                <button class="tab-button" onclick="switchTab('roles')">角色管理</button>
+                <button class="tab-button" onclick="switchTab('config')">配置管理</button>
+            </div>
+
+            <div class="tab-content">
+                <!-- 用户管理标签页 -->
+                <div id="users" class="tab-pane active">
+                    <h3>用户管理</h3>
+                    <div class="user-list" id="user-list">
+                        <div class="loading">正在加载用户列表...</div>
+                    </div>
+                </div>
+
+                <!-- 角色管理标签页 -->
+                <div id="roles" class="tab-pane">
+                    <h3>角色管理</h3>
+                    <div class="user-list" id="role-management">
+                        <div class="loading">正在加载角色信息...</div>
+                    </div>
+                </div>
+
+                <!-- 配置管理标签页 -->
+                <div id="config" class="tab-pane">
+                    <h3>配置管理</h3>
+                    <div class="config-section">
+                        <div class="config-selector">
+                            <label for="config-file-select">选择配置文件:</label>
+                            <select id="config-file-select" onchange="loadSelectedConfig()">
+                                <option value="">请选择配置文件...</option>
+                            </select>
+                            <button class="refresh-btn" onclick="refreshConfigList()">刷新列表</button>
+                        </div>
+                        <div class="config-editor" id="config-editor">
+                            <div class="empty-state">请从上方下拉框中选择要编辑的配置文件</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        // 页面加载时检查认证状态
+        document.addEventListener('DOMContentLoaded', async function() {
+            await checkAuth();
+            await loadUsers();
+            await loadRoles();
+            await loadConfigs();
+        });
+
+        // 检查用户认证状态
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/user');
+                const data = await response.json();
+                
+                if (data.error) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                currentUser = data;
+                document.getElementById('current-user').textContent = `${data.username} (${getRoleDisplayName(data.role)})`;
+                
+                // 如果不是超级管理员，隐藏配置管理和角色管理标签
+                if (data.role !== 'super_admin') {
+                    document.querySelector('[onclick="switchTab(\'config\')"]').style.display = 'none';
+                    document.querySelector('[onclick="switchTab(\'roles\')"]').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('认证检查失败:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // 切换标签
+        function switchTab(tabName) {
+            // 隐藏所有标签页
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+            });
+            
+            // 移除所有按钮的激活状态
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 显示选中的标签页
+            document.getElementById(tabName).classList.add('active');
+            
+            // 激活对应的按钮
+            event.target.classList.add('active');
+        }
+
+        // 加载用户列表
+        async function loadUsers() {
+            try {
+                const response = await fetch('/admin/users');
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById('user-list').innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+                    return;
+                }
+                
+                const userListHtml = data.users.map(user => `
+                    <div class="user-item">
+                        <div class="user-info-item">
+                            <strong>${user.username}</strong>
+                            <span>邮箱: ${user.email}</span>
+                            <span>角色: ${getRoleDisplayName(user.role)}</span>
+                            <span>状态: ${user.is_active ? '激活' : '禁用'}</span>
+                            <span>创建时间: ${new Date(user.created_at).toLocaleString()}</span>
+                        </div>
+                        <div class="user-actions">
+                            ${user.is_active ? 
+                                `<button class="btn btn-warning" onclick="toggleUser(${user.id}, false)">禁用</button>` :
+                                `<button class="btn btn-success" onclick="toggleUser(${user.id}, true)">激活</button>`
+                            }
+                            ${currentUser && currentUser.role === 'super_admin' ? 
+                                `<button class="btn btn-danger" onclick="deleteUser(${user.id})">删除</button>` : ''
+                            }
+                            ${user.role !== 'super_admin' ? '' : '<span style="color: #666; font-size: 12px;">超级管理员</span>'}
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('user-list').innerHTML = userListHtml || '<div class="empty-state">暂无用户</div>';
+            } catch (error) {
+                console.error('加载用户列表失败:', error);
+                document.getElementById('user-list').innerHTML = '<div class="alert alert-error">加载用户列表失败</div>';
+            }
+        }
+
+        // 加载用户角色信息
+        async function loadRoles() {
+            try {
+                const response = await fetch('/admin/users');
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById('role-management').innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+                    return;
+                }
+                
+                const roleListHtml = data.users.map(user => `
+                    <div class="user-item">
+                        <div class="user-info-item">
+                            <strong>${user.username}</strong>
+                            <span>邮箱: ${user.email}</span>
+                            <span>当前角色: ${getRoleDisplayName(user.role)}</span>
+                            <span>创建时间: ${new Date(user.created_at).toLocaleString()}</span>
+                        </div>
+                        <div class="user-actions">
+                            ${user.role !== 'super_admin' ? `
+                                <select onchange="updateUserRole(${user.id}, this.value)" style="margin-right: 10px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <option value="user" ${user.role === 'user' ? 'selected' : ''}>普通用户</option>
+                                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>管理员</option>
+                                    <option value="super_admin" ${user.role === 'super_admin' ? 'selected' : ''}>超级管理员</option>
+                                </select>
+                            ` : '<span style="color: #666; font-size: 12px;">超级管理员 (不可修改)</span>'}
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('role-management').innerHTML = roleListHtml || '<div class="empty-state">暂无用户</div>';
+            } catch (error) {
+                console.error('加载用户角色信息失败:', error);
+                document.getElementById('role-management').innerHTML = '<div class="alert alert-error">加载用户角色信息失败</div>';
+            }
+        }
+
+        // 更新用户角色
+        async function updateUserRole(userId, newRole) {
+            if (!confirm(`确定要将该用户的角色更改为 ${getRoleDisplayName(newRole)} 吗？`)) {
+                // 如果用户取消，重新加载角色列表以恢复选择框状态
+                await loadRoles();
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/admin/users/${userId}/role`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ role: newRole })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(`更新角色失败: ${data.error}`);
+                    await loadRoles(); // 恢复原状态
+                    return;
+                }
+                
+                alert(`用户角色已更新为 ${getRoleDisplayName(newRole)}`);
+                await loadRoles();
+                await loadUsers(); // 同时更新用户管理页面
+            } catch (error) {
+                console.error('更新角色失败:', error);
+                alert('更新角色失败，请重试');
+                await loadRoles(); // 恢复原状态
+            }
+        }
+
+        // 获取角色显示名称
+        function getRoleDisplayName(role) {
+            switch(role) {
+                case 'user': return '普通用户';
+                case 'admin': return '管理员';
+                case 'super_admin': return '超级管理员';
+                default: return role;
+            }
+        }
+
+        // 切换用户状态
+        async function toggleUser(userId, isActive) {
+            if (!confirm(`确定要${isActive ? '激活' : '禁用'}该用户吗？`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/admin/users/${userId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ is_active: isActive })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(`操作失败: ${data.error}`);
+                    return;
+                }
+                
+                alert(`用户状态已${isActive ? '激活' : '禁用'}`);
+                await loadUsers();
+            } catch (error) {
+                console.error('操作失败:', error);
+                alert('操作失败，请重试');
+            }
+        }
+
+        // 删除用户
+        async function deleteUser(userId) {
+            if (!confirm('确定要删除该用户吗？此操作不可撤销！')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/admin/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(`删除失败: ${data.error}`);
+                    return;
+                }
+                
+                alert('用户已删除');
+                await loadUsers();
+            } catch (error) {
+                console.error('删除失败:', error);
+                alert('删除失败，请重试');
+            }
+        }
+
+        // 加载配置文件列表
+        async function loadConfigs() {
+            try {
+                const response = await fetch('/admin/config');
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById('config-editor').innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+                    return;
+                }
+                
+                const select = document.getElementById('config-file-select');
+                select.innerHTML = '<option value="">请选择配置文件...</option>';
+                
+                data.files.forEach(filename => {
+                    const option = document.createElement('option');
+                    option.value = filename;
+                    option.textContent = filename;
+                    select.appendChild(option);
+                });
+                
+                // 清空编辑器区域
+                document.getElementById('config-editor').innerHTML = '<div class="empty-state">请从上方下拉框中选择要编辑的配置文件</div>';
+                
+            } catch (error) {
+                console.error('加载配置文件列表失败:', error);
+                document.getElementById('config-editor').innerHTML = '<div class="alert alert-error">加载配置文件列表失败，请检查网络连接或联系管理员</div>';
+            }
+        }
+
+        // 加载选中的配置文件
+        async function loadSelectedConfig() {
+            const filename = document.getElementById('config-file-select').value;
+            
+            if (!filename) {
+                document.getElementById('config-editor').innerHTML = '<div class="empty-state">请从上方下拉框中选择要编辑的配置文件</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/config/${filename}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById('config-editor').innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+                    return;
+                }
+
+                const editor = document.getElementById('config-editor');
+                const isMainConfig = filename === 'config.toml';
+                const fileType = filename.split('.').pop();
+                
+                let content = data.content;
+                
+                // 如果是JSON文件，尝试格式化
+                if (fileType === 'json') {
+                    try {
+                        const parsed = JSON.parse(content);
+                        content = JSON.stringify(parsed, null, 2);
+                    } catch (e) {
+                        // 如果解析失败，保持原内容
+                    }
+                }
+
+                const configTitle = isMainConfig ?
+                    `${filename} <span class="file-type">(主配置文件 - ${fileType.toUpperCase()})</span>` :
+                    `${filename} <span class="file-type">(${fileType.toUpperCase()})</span>`;
+
+                editor.innerHTML = `
+                    <div class="config-file">
+                        <div class="config-header">
+                            <h4>${configTitle}</h4>
+                            <button class="save-btn" onclick="saveConfig('${filename}')">保存配置</button>
+                        </div>
+                        <textarea class="config-textarea" id="config-content-${filename}">${content}</textarea>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('加载配置文件失败:', error);
+                document.getElementById('config-editor').innerHTML = '<div class="alert alert-error">加载配置文件失败，请检查网络连接或联系管理员</div>';
+            }
+        }
+
+        // 刷新配置文件列表
+        async function refreshConfigList() {
+            await loadConfigs();
+        }
+
+        // 保存配置文件
+        async function saveConfig(filename) {
+            const content = document.getElementById(`config-content-${filename}`).value;
+            const fileType = filename.split('.').pop();
+            
+            // 如果是JSON文件，验证格式
+            if (fileType === 'json') {
+                try {
+                    JSON.parse(content);
+                } catch (e) {
+                    alert('JSON格式错误，请检查语法');
+                    return;
+                }
+            }
+            
+            if (!confirm(`确定要保存配置文件 ${filename} 吗？`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/admin/config/${filename}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content: content })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(`保存失败: ${data.error}`);
+                    return;
+                }
+                
+                alert(`配置文件 ${filename} 保存成功`);
+            } catch (error) {
+                console.error('保存配置失败:', error);
+                alert('保存失败，请重试');
+            }
+        }
+
+        // 退出登录
+        async function logout() {
+            try {
+                const response = await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('退出登录失败:', error);
+                window.location.href = '/login';
+            }
+        }
+    </script>
+</body>
+</html>

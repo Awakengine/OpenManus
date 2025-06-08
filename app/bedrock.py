@@ -1,3 +1,8 @@
+"""Amazon Bedrock 客户端模块
+
+提供与 Amazon Bedrock 服务交互的客户端实现，
+支持 OpenAI 格式的聊天完成功能，包括工具调用和流式响应。
+"""
 import json
 import sys
 import time
@@ -8,15 +13,24 @@ from typing import Dict, List, Literal, Optional
 import boto3
 
 
-# Global variables to track the current tool use ID across function calls
-# Tmp solution
+# 用于跨函数调用跟踪当前工具使用 ID 的全局变量
+# 临时解决方案
 CURRENT_TOOLUSE_ID = None
 
 
-# Class to handle OpenAI-style response formatting
+# 处理 OpenAI 风格响应格式的类
 class OpenAIResponse:
+    """OpenAI 响应格式处理类
+    
+    将字典数据转换为 OpenAI 风格的响应对象。
+    """
     def __init__(self, data):
-        # Recursively convert nested dicts and lists to OpenAIResponse objects
+        """初始化响应对象
+        
+        Args:
+            data: 响应数据字典
+        """
+        # 递归地将嵌套的字典和列表转换为 OpenAIResponse 对象
         for key, value in data.items():
             if isinstance(value, dict):
                 value = OpenAIResponse(value)
@@ -28,37 +42,69 @@ class OpenAIResponse:
             setattr(self, key, value)
 
     def model_dump(self, *args, **kwargs):
-        # Convert object to dict and add timestamp
+        """将对象转换为字典并添加时间戳"""
         data = self.__dict__
         data["created_at"] = datetime.now().isoformat()
         return data
 
 
-# Main client class for interacting with Amazon Bedrock
+# 与 Amazon Bedrock 交互的主客户端类
 class BedrockClient:
+    """Amazon Bedrock 客户端
+    
+    提供与 Amazon Bedrock 服务交互的主要接口。
+    """
     def __init__(self):
-        # Initialize Bedrock client, you need to configure AWS env first
+        """初始化 Bedrock 客户端
+        
+        注意：需要先配置 AWS 环境变量
+        """
         try:
             self.client = boto3.client("bedrock-runtime")
             self.chat = Chat(self.client)
         except Exception as e:
-            print(f"Error initializing Bedrock client: {e}")
+            print(f"初始化 Bedrock 客户端时出错: {e}")
             sys.exit(1)
 
 
-# Chat interface class
+# 聊天接口类
 class Chat:
+    """聊天接口类
+    
+    提供聊天相关功能的接口。
+    """
     def __init__(self, client):
+        """初始化聊天接口
+        
+        Args:
+            client: Bedrock 客户端实例
+        """
         self.completions = ChatCompletions(client)
 
 
-# Core class handling chat completions functionality
+# 处理聊天完成功能的核心类
 class ChatCompletions:
+    """聊天完成功能处理类
+    
+    负责处理聊天完成请求，包括格式转换和响应处理。
+    """
     def __init__(self, client):
+        """初始化聊天完成处理器
+        
+        Args:
+            client: Bedrock 客户端实例
+        """
         self.client = client
 
     def _convert_openai_tools_to_bedrock_format(self, tools):
-        # Convert OpenAI function calling format to Bedrock tool format
+        """将 OpenAI 工具格式转换为 Bedrock 工具格式
+        
+        Args:
+            tools: OpenAI 格式的工具列表
+            
+        Returns:
+            Bedrock 格式的工具列表
+        """
         bedrock_tools = []
         for tool in tools:
             if tool.get("type") == "function":
@@ -84,7 +130,14 @@ class ChatCompletions:
         return bedrock_tools
 
     def _convert_openai_messages_to_bedrock_format(self, messages):
-        # Convert OpenAI message format to Bedrock message format
+        """将 OpenAI 消息格式转换为 Bedrock 消息格式
+        
+        Args:
+            messages: OpenAI 格式的消息列表
+            
+        Returns:
+            tuple: (系统提示, Bedrock 格式的消息列表)
+        """
         bedrock_messages = []
         system_prompt = []
         for message in messages:
@@ -132,7 +185,14 @@ class ChatCompletions:
         return system_prompt, bedrock_messages
 
     def _convert_bedrock_response_to_openai_format(self, bedrock_response):
-        # Convert Bedrock response format to OpenAI format
+        """将 Bedrock 响应格式转换为 OpenAI 格式
+        
+        Args:
+            bedrock_response: Bedrock 格式的响应
+            
+        Returns:
+            OpenAI 格式的响应对象
+        """
         content = ""
         if bedrock_response.get("output", {}).get("message", {}).get("content"):
             content_array = bedrock_response["output"]["message"]["content"]
@@ -202,7 +262,19 @@ class ChatCompletions:
         tool_choice: Literal["none", "auto", "required"] = "auto",
         **kwargs,
     ) -> OpenAIResponse:
-        # Non-streaming invocation of Bedrock model
+        """非流式调用 Bedrock 模型
+        
+        Args:
+            model: 模型名称
+            messages: 消息列表
+            max_tokens: 最大令牌数
+            temperature: 温度参数
+            tools: 工具列表
+            tool_choice: 工具选择策略
+            
+        Returns:
+            OpenAI 格式的响应
+        """
         (
             system_prompt,
             bedrock_messages,
@@ -227,7 +299,19 @@ class ChatCompletions:
         tool_choice: Literal["none", "auto", "required"] = "auto",
         **kwargs,
     ) -> OpenAIResponse:
-        # Streaming invocation of Bedrock model
+        """流式调用 Bedrock 模型
+        
+        Args:
+            model: 模型名称
+            messages: 消息列表
+            max_tokens: 最大令牌数
+            temperature: 温度参数
+            tools: 工具列表
+            tool_choice: 工具选择策略
+            
+        Returns:
+            OpenAI 格式的响应
+        """
         (
             system_prompt,
             bedrock_messages,
@@ -240,7 +324,7 @@ class ChatCompletions:
             toolConfig={"tools": tools} if tools else None,
         )
 
-        # Initialize response structure
+        # 初始化响应结构
         bedrock_response = {
             "output": {"message": {"role": "", "content": []}},
             "stopReason": "",
@@ -250,7 +334,7 @@ class ChatCompletions:
         bedrock_response_text = ""
         bedrock_response_tool_input = ""
 
-        # Process streaming response
+        # 处理流式响应
         stream = response.get("stream")
         if stream:
             for event in stream:
@@ -308,7 +392,20 @@ class ChatCompletions:
         tool_choice: Literal["none", "auto", "required"] = "auto",
         **kwargs,
     ) -> OpenAIResponse:
-        # Main entry point for chat completion
+        """聊天完成的主要入口点
+        
+        Args:
+            model: 模型名称
+            messages: 消息列表
+            max_tokens: 最大令牌数
+            temperature: 温度参数
+            stream: 是否使用流式响应
+            tools: 工具列表
+            tool_choice: 工具选择策略
+            
+        Returns:
+            OpenAI 格式的响应
+        """
         bedrock_tools = []
         if tools is not None:
             bedrock_tools = self._convert_openai_tools_to_bedrock_format(tools)

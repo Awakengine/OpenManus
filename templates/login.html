@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block title %}登录 - OpenManus{% endblock %}
+
+{% block content %}
+<style>
+    .login-container {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .login-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .login-header {
+        text-align: center;
+        padding: 30px 30px 20px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .login-header .robot-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        color: white;
+        font-size: 24px;
+    }
+
+    .login-header h2 {
+        color: #333;
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .login-header p {
+        color: #666;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .login-form {
+        padding: 20px 30px 30px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        color: #333;
+        font-weight: 500;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .remember-me {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+
+    .remember-checkbox {
+        display: flex;
+        align-items: center;
+    }
+
+    .remember-checkbox input {
+        margin-right: 8px;
+    }
+
+    .remember-checkbox label {
+        color: #666;
+        font-size: 14px;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .security-note-inline {
+        color: #999;
+        font-size: 9px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .login-btn {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .login-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .login-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .default-credentials {
+        background: #e3f2fd;
+        border: 1px solid #bbdefb;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        font-size: 13px;
+        text-align: center;
+    }
+
+    .default-credentials strong {
+        color: #1976d2;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .default-credentials code {
+        background: #1976d2;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+
+    .login-footer {
+        text-align: center;
+        font-size: 14px;
+    }
+
+    .login-footer a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .login-footer a:hover {
+        text-decoration: underline;
+    }
+
+    .demo-link {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .demo-link a {
+        color: #999;
+        font-size: 13px;
+    }
+
+    .security-note {
+        text-align: center;
+        margin-top: 20px;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 13px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 10px 20px;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        max-width: 300px;
+        margin: 20px auto 0;
+    }
+
+    .alert {
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-size: 14px;
+    }
+
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .spinner-border-sm {
+        width: 16px;
+        height: 16px;
+        border-width: 2px;
+    }
+
+    .d-none {
+        display: none !important;
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="robot-icon">
+                <i class="fas fa-robot"></i>
+            </div>
+            <h2>欢迎使用 OpenManus</h2>
+            <p>登录您的账户</p>
+        </div>
+
+        <div class="login-form">
+            <div id="alert-container"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">
+                        <i class="fas fa-user me-2"></i>用户名
+                    </label>
+                    <input type="text" class="form-control" id="username" name="username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">
+                        <i class="fas fa-lock me-2"></i>密码
+                    </label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+
+                <div class="remember-me">
+                    <div class="remember-checkbox">
+                        <input type="checkbox" id="rememberMe">
+                        <label for="rememberMe">记住我</label>
+                    </div>
+                    <div class="security-note-inline">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        您的对话内容安全存储并加密保护
+                    </div>
+                </div>
+
+                <button type="submit" class="login-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>登录</span>
+                    <span class="spinner-border spinner-border-sm d-none" id="loginSpinner"></span>
+                </button>
+            </form>
+
+            <div class="default-credentials">
+                <strong>默认登录凭据：</strong>
+                用户名: <code>admin</code> 密码: <code>admin123</code>
+            </div>
+
+            <div class="login-footer">
+                <p>还没有账户？ <a href="{{ url_for('register') }}">立即注册</a></p>
+                <div class="demo-link">
+                    <a href="{{ url_for('demo') }}">
+                        <i class="fas fa-play me-1"></i>演示模式（无需登录）
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function () {
+        $('#loginForm').on('submit', function (e) {
+            e.preventDefault();
+
+            const username = $('#username').val();
+            const password = $('#password').val();
+            const submitBtn = $(this).find('button[type="submit"]');
+            const spinner = $('#loginSpinner');
+
+            // Show loading state
+            submitBtn.prop('disabled', true);
+            spinner.removeClass('d-none');
+
+            // Clear previous alerts
+            $('#alert-container').empty();
+
+            $.ajax({
+                url: '{{ url_for("login") }}',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    username: username,
+                    password: password
+                }),
+                success: function (response) {
+                    if (response.success) {
+                        // Show success message
+                        showAlert('登录成功！正在跳转...', 'success');
+
+                        // Redirect after a short delay
+                        setTimeout(function () {
+                            window.location.href = '{{ url_for("index") }}';
+                        }, 1000);
+                    } else {
+                        showAlert(response.error || '登录失败', 'danger');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    showAlert('发生错误，请重试。', 'danger');
+                },
+                complete: function () {
+                    // Hide loading state
+                    submitBtn.prop('disabled', false);
+                    spinner.addClass('d-none');
+                }
+            });
+        });
+
+        function showAlert(message, type) {
+            const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+            $('#alert-container').html(alertHtml);
+        }
+
+        // Auto-focus on username field
+        $('#username').focus();
+
+        // Enter key handling
+        $('#username, #password').on('keypress', function (e) {
+            if (e.which === 13) {
+                $('#loginForm').submit();
+            }
+        });
+    });
+</script>
+{% endblock %}

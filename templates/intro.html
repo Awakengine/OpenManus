@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}OpenManus - 智能AI助手{% endblock %}
+
+{% block content %}
+<div class="intro-container">
+    <!-- Hero Section -->
+    <section class="hero-section text-center py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="hero-content">
+                        <i class="fas fa-robot fa-5x text-primary mb-4"></i>
+                        <h1 class="display-4 fw-bold mb-4">OpenManus</h1>
+                        <p class="lead mb-4">您的智能AI助手，为您提供专业的代码开发、研究分析和任务自动化服务</p>
+                        <button class="btn btn-primary btn-lg px-5 py-3" id="startExperienceBtn">
+                            <i class="fas fa-rocket me-2"></i>立即体验
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section py-5 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-12 text-center mb-5">
+                    <h2 class="fw-bold">核心功能</h2>
+                    <p class="text-muted">OpenManus 为您提供全方位的AI助手服务</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <i class="fas fa-code fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">代码开发</h5>
+                            <p class="card-text text-muted">智能编写、调试和解释代码，支持多种编程语言，提升开发效率</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">研究分析</h5>
+                            <p class="card-text text-muted">快速查找信息、分析数据，为您的决策提供有力支持</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <i class="fas fa-tasks fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">任务自动化</h5>
+                            <p class="card-text text-muted">自动化工作流程，简化重复性任务，提高工作效率</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it Works Section -->
+    <section class="how-it-works-section py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-12 text-center mb-5">
+                    <h2 class="fw-bold">如何使用</h2>
+                    <p class="text-muted">简单三步，开始您的AI助手之旅</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4 text-center">
+                    <div class="step-item">
+                        <div class="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3">
+                            <span class="fw-bold">1</span>
+                        </div>
+                        <h5>点击体验</h5>
+                        <p class="text-muted">点击"立即体验"按钮进入对话界面</p>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="step-item">
+                        <div class="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3">
+                            <span class="fw-bold">2</span>
+                        </div>
+                        <h5>输入问题</h5>
+                        <p class="text-muted">在对话框中输入您的问题或需求</p>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="step-item">
+                        <div class="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3">
+                            <span class="fw-bold">3</span>
+                        </div>
+                        <h5>获得答案</h5>
+                        <p class="text-muted">AI助手将为您提供专业的解答和建议</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section py-5 bg-primary text-white">
+        <div class="container text-center">
+            <h2 class="fw-bold mb-3">准备好开始了吗？</h2>
+            <p class="lead mb-4">立即体验OpenManus的强大功能，让AI助手为您的工作和学习提供支持</p>
+            <button class="btn btn-light btn-lg px-5 py-3" id="startExperienceBtn2">
+                <i class="fas fa-rocket me-2"></i>立即体验
+            </button>
+        </div>
+    </section>
+</div>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-sign-in-alt me-2"></i>登录
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>默认账户：</strong> admin / admin123
+                </div>
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">密码</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label class="form-check-label" for="remember">记住我</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-outline-primary" id="guestBtn">
+                    <i class="fas fa-user me-2"></i>游客访问
+                </button>
+                <button type="button" class="btn btn-primary" id="loginBtn">
+                    <i class="fas fa-sign-in-alt me-2"></i>登录
+                </button>
+                <button type="button" class="btn btn-success" id="registerBtn">
+                    <i class="fas fa-user-plus me-2"></i>注册
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>注册
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="registerForm">
+                    <div class="mb-3">
+                        <label for="regUsername" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="regUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="regPassword" class="form-label">密码</label>
+                        <input type="password" class="form-control" id="regPassword" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">确认密码</label>
+                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success" id="submitRegisterBtn">
+                    <i class="fas fa-user-plus me-2"></i>注册
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.intro-container {
+    min-height: 100vh;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+}
+
+.feature-card {
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+.step-number {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+}
+
+.cta-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.modal-content {
+    border-radius: 15px;
+}
+
+.alert {
+    border-radius: 10px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 立即体验按钮点击事件
+    $('#startExperienceBtn, #startExperienceBtn2').click(function() {
+        window.location.href = '/chat';
+    });
+
+    // 登录表单提交
+    $('#loginBtn').click(function() {
+        const username = $('#username').val();
+        const password = $('#password').val();
+        const remember = $('#remember').is(':checked');
+
+        if (!username || !password) {
+            alert('请输入用户名和密码');
+            return;
+        }
+
+        $.ajax({
+            url: '/login',
+            method: 'POST',
+            data: {
+                username: username,
+                password: password,
+                remember: remember
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#loginModal').modal('hide');
+                    window.location.href = '/chat';
+                } else {
+                    alert(response.message || '登录失败');
+                }
+            },
+            error: function() {
+                alert('登录请求失败，请重试');
+            }
+        });
+    });
+
+    // 注册按钮点击
+    $('#registerBtn').click(function() {
+        $('#loginModal').modal('hide');
+        $('#registerModal').modal('show');
+    });
+
+    // 注册表单提交
+    $('#submitRegisterBtn').click(function() {
+        const username = $('#regUsername').val();
+        const password = $('#regPassword').val();
+        const confirmPassword = $('#confirmPassword').val();
+
+        if (!username || !password || !confirmPassword) {
+            alert('请填写所有字段');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            alert('密码不匹配');
+            return;
+        }
+
+        $.ajax({
+            url: '/register',
+            method: 'POST',
+            data: {
+                username: username,
+                password: password
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#registerModal').modal('hide');
+                    alert('注册成功！请登录');
+                    $('#loginModal').modal('show');
+                } else {
+                    alert(response.message || '注册失败');
+                }
+            },
+            error: function() {
+                alert('注册请求失败，请重试');
+            }
+        });
+    });
+
+    // 游客访问
+    $('#guestBtn').click(function() {
+        $('#loginModal').modal('hide');
+        window.location.href = '/chat?guest=true';
+    });
+});
+</script>
+{% endblock %}

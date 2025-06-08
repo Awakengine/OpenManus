@@ -1,0 +1,295 @@
+<div class="row mt-4">
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100 border-0 bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-code fa-2x text-primary mb-2"></i>
+                                        <h6>代码开发</h6>
+                                        <small>编写、调试和解释代码</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100 border-0 bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-search fa-2x text-primary mb-2"></i>
+                                        <h6>研究分析</h6>
+                                        <small>查找信息和分析数据</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100 border-0 bg-light">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-tasks fa-2x text-primary mb-2"></i>
+                                        <h6>任务自动化</h6>
+                                        <small>自动化工作流程和流程</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Loading Indicator -->
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">加载中...</span>
+                </div>
+                <p class="mt-2 text-muted">OpenManus 正在思考...</p>
+            </div>
+            
+            <!-- Chat Input -->
+            <div class="chat-input">
+                <form id="chatForm">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="messageInput" 
+                               placeholder="在此输入您的消息..." disabled>
+                        <button class="btn btn-primary" type="submit" id="sendBtn" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        OpenManus 可能会出错。请验证重要信息。
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Chat Modal -->
+<div class="modal fade" id="newChatModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>新建对话
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newChatForm">
+                    <div class="mb-3">
+                        <label for="chatTitleInput" class="form-label">对话标题</label>
+                        <input type="text" class="form-control" id="chatTitleInput" 
+                               placeholder="为此对话输入标题" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="createChatBtn">
+                    <i class="fas fa-plus me-2"></i>创建
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentConversationId = null;
+let conversations = [];
+
+$(document).ready(function() {
+    loadConversations();
+    
+    // Chat form submission
+    $('#chatForm').submit(function(e) {
+        e.preventDefault();
+        sendMessage();
+    });
+    
+    // New chat button
+    $('#newChatBtn').click(function() {
+        $('#newChatModal').modal('show');
+    });
+    
+    // Create new chat
+    $('#createChatBtn').click(function() {
+        const title = $('#chatTitleInput').val().trim();
+        if (!title) {
+            alert('请输入对话标题');
+            return;
+        }
+        
+        createNewConversation(title);
+    });
+    
+    // Toggle sidebar on mobile
+    $('#toggleSidebar').click(function() {
+        $('#sidebar').toggleClass('show');
+    });
+});
+
+function sendMessage() {
+    const message = $('#messageInput').val().trim();
+    if (!message) return;
+    
+    // Add user message to UI
+    addMessage('user', message);
+    $('#messageInput').val('');
+    
+    // Show loading indicator
+    $('#loadingIndicator').show();
+    
+    // Send to backend
+    $.ajax({
+        url: '/api/chat',
+        method: 'POST',
+        data: {
+            message: message,
+            conversation_id: currentConversationId
+        },
+        success: function(response) {
+            $('#loadingIndicator').hide();
+            if (response.success) {
+                addMessage('assistant', response.response);
+                if (response.conversation_id) {
+                    currentConversationId = response.conversation_id;
+                    loadConversations();
+                }
+            } else {
+                addMessage('system', '抱歉，发生了错误：' + (response.message || '未知错误'));
+            }
+        },
+        error: function() {
+            $('#loadingIndicator').hide();
+            addMessage('system', '网络错误，请重试');
+        }
+    });
+}
+
+function addMessage(type, content) {
+    const messagesContainer = $('#chatMessages');
+    $('#welcomeMessage').hide();
+    
+    const messageHtml = `
+        <div class="message ${type}-message">
+            <div class="message-content">
+                <div class="message-header">
+                    <i class="fas ${type === 'user' ? 'fa-user' : type === 'assistant' ? 'fa-robot' : 'fa-info-circle'}"></i>
+                    <span class="message-sender">${type === 'user' ? '您' : type === 'assistant' ? 'OpenManus' : '系统'}</span>
+                    <span class="message-time">${new Date().toLocaleTimeString()}</span>
+                </div>
+                <div class="message-text">${content}</div>
+            </div>
+        </div>
+    `;
+    
+    messagesContainer.append(messageHtml);
+    messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
+}
+
+function loadConversations() {
+    $.ajax({
+        url: '/api/conversations',
+        method: 'GET',
+        success: function(response) {
+            if (response.success) {
+                conversations = response.conversations;
+                renderConversations();
+                enableChat();
+            }
+        },
+        error: function() {
+            console.error('Failed to load conversations');
+        }
+    });
+}
+
+function renderConversations() {
+    const container = $('#conversationsList');
+    container.empty();
+    
+    if (conversations.length === 0) {
+        container.append('<p class="text-muted small">暂无对话</p>');
+        return;
+    }
+    
+    conversations.forEach(conv => {
+        const isActive = conv.id === currentConversationId;
+        const convHtml = `
+            <div class="conversation-item ${isActive ? 'active' : ''}" data-id="${conv.id}">
+                <div class="conversation-title">${conv.title}</div>
+                <div class="conversation-time">${new Date(conv.created_at).toLocaleDateString()}</div>
+            </div>
+        `;
+        container.append(convHtml);
+    });
+    
+    // Bind click events
+    $('.conversation-item').click(function() {
+        const convId = $(this).data('id');
+        selectConversation(convId);
+    });
+}
+
+function selectConversation(convId) {
+    currentConversationId = convId;
+    const conv = conversations.find(c => c.id === convId);
+    if (conv) {
+        $('#conversationTitle').text(conv.title);
+        loadMessages(convId);
+    }
+    renderConversations();
+}
+
+function loadMessages(convId) {
+    $.ajax({
+        url: `/api/conversations/${convId}/messages`,
+        method: 'GET',
+        success: function(response) {
+            if (response.success) {
+                const messagesContainer = $('#chatMessages');
+                messagesContainer.empty();
+                $('#welcomeMessage').hide();
+                
+                response.messages.forEach(msg => {
+                    addMessage(msg.role, msg.content);
+                });
+            }
+        },
+        error: function() {
+            console.error('Failed to load messages');
+        }
+    });
+}
+
+function createNewConversation(title) {
+    $.ajax({
+        url: '/api/conversations',
+        method: 'POST',
+        data: { title: title },
+        success: function(response) {
+            if (response.success) {
+                $('#newChatModal').modal('hide');
+                $('#chatTitleInput').val('');
+                currentConversationId = response.conversation_id;
+                $('#conversationTitle').text(title);
+                loadConversations();
+                
+                // Clear messages area
+                $('#chatMessages').empty();
+                $('#welcomeMessage').show();
+            } else {
+                alert('创建对话失败：' + (response.message || '未知错误'));
+            }
+        },
+        error: function() {
+            alert('创建对话失败，请重试');
+        }
+    });
+}
+
+function enableChat() {
+    $('#messageInput').prop('disabled', false);
+    $('#sendBtn').prop('disabled', false);
+}
+</script>
+{% endblock %}

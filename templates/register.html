@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}注册 - OpenManus{% endblock %}
+
+{% block content %}
+<div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
+    <div class="row w-100">
+        <div class="col-md-6 col-lg-4 mx-auto">
+            <div class="card">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-user-plus fa-3x text-primary mb-3"></i>
+                        <h2 class="card-title">加入 OpenManus</h2>
+                        <p class="text-muted">创建您的账户开始使用</p>
+                    </div>
+                    
+                    <div id="alert-container"></div>
+                    
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">
+                                <i class="fas fa-user me-2"></i>用户名
+                            </label>
+                            <input type="text" class="form-control" id="username" name="username" required
+                                   minlength="3" maxlength="50">
+                            <div class="form-text">3-50个字符，仅限字母、数字和下划线</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope me-2"></i>邮箱地址
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="form-text">我们绝不会与他人分享您的邮箱</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-2"></i>密码
+                            </label>
+                            <input type="password" class="form-control" id="password" name="password" required
+                                   minlength="6">
+                            <div class="form-text">至少6个字符</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">
+                                <i class="fas fa-lock me-2"></i>确认密码
+                            </label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="agreeTerms" required>
+                            <label class="form-check-label" for="agreeTerms">
+                                我同意 <a href="#" class="text-decoration-none">服务条款</a> 
+                                和 <a href="#" class="text-decoration-none">隐私政策</a>
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                            <i class="fas fa-user-plus me-2"></i>创建账户
+                            <span class="spinner-border spinner-border-sm ms-2 d-none" id="registerSpinner"></span>
+                        </button>
+                    </form>
+                    
+                    <div class="text-center">
+                        <p class="mb-0">已有账户？ 
+                            <a href="{{ url_for('login') }}" class="text-decoration-none">立即登录</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    您的数据受到企业级安全保护
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#registerForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const username = $('#username').val();
+        const email = $('#email').val();
+        const password = $('#password').val();
+        const confirmPassword = $('#confirmPassword').val();
+        const submitBtn = $(this).find('button[type="submit"]');
+        const spinner = $('#registerSpinner');
+        
+        // Clear previous alerts
+        $('#alert-container').empty();
+        
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            showAlert('密码不匹配', 'danger');
+            return;
+        }
+        
+        // Validate username format
+        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+            showAlert('用户名只能包含字母、数字和下划线', 'danger');
+            return;
+        }
+        
+        // Show loading state
+        submitBtn.prop('disabled', true);
+        spinner.removeClass('d-none');
+        
+        $.ajax({
+            url: '{{ url_for("register") }}',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                username: username,
+                email: email,
+                password: password
+            }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('账户创建成功！正在跳转到登录页面...', 'success');
+                    
+                    // Redirect to login after a short delay
+                    setTimeout(function() {
+                        window.location.href = '{{ url_for("login") }}';
+                    }, 2000);
+                } else {
+                    showAlert(response.error || '注册失败', 'danger');
+                }
+            },
+            error: function(xhr, status, error) {
+                showAlert('发生错误，请重试。', 'danger');
+            },
+            complete: function() {
+                // Hide loading state
+                submitBtn.prop('disabled', false);
+                spinner.addClass('d-none');
+            }
+        });
+    });
+    
+    function showAlert(message, type) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        $('#alert-container').html(alertHtml);
+    }
+    
+    // Real-time password confirmation validation
+    $('#confirmPassword').on('input', function() {
+        const password = $('#password').val();
+        const confirmPassword = $(this).val();
+        
+        if (confirmPassword && password !== confirmPassword) {
+            $(this).addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-invalid');
+        }
+    });
+    
+    // Auto-focus on username field
+    $('#username').focus();
+});
+</script>
+{% endblock %}

@@ -1,3 +1,8 @@
+"""大语言模型（LLM）客户端模块
+
+提供统一的 LLM 接口，支持 OpenAI、Azure OpenAI 和 AWS Bedrock 等多种服务。
+包含 token 计数、重试机制、多模态支持等功能。
+"""
 import math
 from typing import Dict, List, Optional, Union
 
@@ -21,7 +26,7 @@ from tenacity import (
 from app.bedrock import BedrockClient
 from app.config import LLMSettings, config
 from app.exceptions import TokenLimitExceeded
-from app.logger import logger  # Assuming a logger is set up in your app
+from app.logger import logger  # 假设应用中已设置日志记录器
 from app.schema import (
     ROLE_VALUES,
     TOOL_CHOICE_TYPE,
@@ -31,7 +36,9 @@ from app.schema import (
 )
 
 
+# 推理模型列表（支持复杂推理的模型）
 REASONING_MODELS = ["o1", "o3-mini"]
+# 多模态模型列表（支持图像和文本的模型）
 MULTIMODAL_MODELS = [
     "gpt-4-vision-preview",
     "gpt-4o",
@@ -43,34 +50,44 @@ MULTIMODAL_MODELS = [
 
 
 class TokenCounter:
-    # Token constants
-    BASE_MESSAGE_TOKENS = 4
-    FORMAT_TOKENS = 2
-    LOW_DETAIL_IMAGE_TOKENS = 85
-    HIGH_DETAIL_TILE_TOKENS = 170
+    """Token 计数器类
+    
+    用于计算文本、图像和消息的 token 数量。
+    支持 OpenAI 的 token 计算规则，包括多模态内容。
+    """
+    # Token 常量
+    BASE_MESSAGE_TOKENS = 4  # 每条消息的基础 token 数
+    FORMAT_TOKENS = 2  # 格式化 token 数
+    LOW_DETAIL_IMAGE_TOKENS = 85  # 低细节图像的 token 数
+    HIGH_DETAIL_TILE_TOKENS = 170  # 高细节图像每个瓦片的 token 数
 
-    # Image processing constants
-    MAX_SIZE = 2048
-    HIGH_DETAIL_TARGET_SHORT_SIDE = 768
-    TILE_SIZE = 512
+    # 图像处理常量
+    MAX_SIZE = 2048  # 最大尺寸
+    HIGH_DETAIL_TARGET_SHORT_SIDE = 768  # 高细节模式下短边目标尺寸
+    TILE_SIZE = 512  # 瓦片大小
 
     def __init__(self, tokenizer):
+        """初始化 Token 计数器
+        
+        Args:
+            tokenizer: tiktoken 分词器实例
+        """
         self.tokenizer = tokenizer
 
     def count_text(self, text: str) -> int:
-        """Calculate tokens for a text string"""
+        """计算文本字符串的 token 数量"""
         return 0 if not text else len(self.tokenizer.encode(text))
 
     def count_image(self, image_item: dict) -> int:
         """
-        Calculate tokens for an image based on detail level and dimensions
+        根据细节级别和尺寸计算图像的 token 数量
 
-        For "low" detail: fixed 85 tokens
-        For "high" detail:
-        1. Scale to fit in 2048x2048 square
-        2. Scale shortest side to 768px
-        3. Count 512px tiles (170 tokens each)
-        4. Add 85 tokens
+        对于 "low" 细节：固定 85 个 token
+        对于 "high" 细节：
+        1. 缩放以适应 2048x2048 正方形
+        2. 将最短边缩放到 768px
+        3. 计算 512px 瓦片数量（每个 170 个 token）
+        4. 添加 85 个 token
         """
         detail = image_item.get("detail", "medium")
 
@@ -172,11 +189,17 @@ class TokenCounter:
 
 
 class LLM:
-    _instances: Dict[str, "LLM"] = {}
+    """大语言模型客户端类
+    
+    使用单例模式管理不同配置的 LLM 实例。
+    支持 OpenAI、Azure OpenAI 和 AWS Bedrock 等多种服务。
+    """
+    _instances: Dict[str, "LLM"] = {}  # 存储不同配置名称的实例
 
     def __new__(
         cls, config_name: str = "default", llm_config: Optional[LLMSettings] = None
     ):
+        """创建或获取 LLM 实例（单例模式）"""
         if config_name not in cls._instances:
             instance = super().__new__(cls)
             instance.__init__(config_name, llm_config)
@@ -186,7 +209,13 @@ class LLM:
     def __init__(
         self, config_name: str = "default", llm_config: Optional[LLMSettings] = None
     ):
-        if not hasattr(self, "client"):  # Only initialize if not already initialized
+        """初始化 LLM 实例
+        
+        Args:
+            config_name: 配置名称
+            llm_config: LLM 配置对象
+        """
+        if not hasattr(self, "client"):  # 仅在未初始化时进行初始化
             llm_config = llm_config or config.llm
             llm_config = llm_config.get(config_name, llm_config["default"])
             self.model = llm_config.model
@@ -197,22 +226,23 @@ class LLM:
             self.api_version = llm_config.api_version
             self.base_url = llm_config.base_url
 
-            # Add token counting related attributes
-            self.total_input_tokens = 0
-            self.total_completion_tokens = 0
+            # 添加 token 计数相关属性
+            self.total_input_tokens = 0  # 累计输入 token 数
+            self.total_completion_tokens = 0  # 累计完成 token 数
             self.max_input_tokens = (
                 llm_config.max_input_tokens
                 if hasattr(llm_config, "max_input_tokens")
                 else None
             )
 
-            # Initialize tokenizer
+            # 初始化分词器
             try:
                 self.tokenizer = tiktoken.encoding_for_model(self.model)
             except KeyError:
-                # If the model is not in tiktoken's presets, use cl100k_base as default
+                # 如果模型不在 tiktoken 的预设中，使用 cl100k_base 作为默认
                 self.tokenizer = tiktoken.get_encoding("cl100k_base")
 
+            # 根据 API 类型初始化客户端
             if self.api_type == "azure":
                 self.client = AsyncAzureOpenAI(
                     base_url=self.base_url,
@@ -227,59 +257,60 @@ class LLM:
             self.token_counter = TokenCounter(self.tokenizer)
 
     def count_tokens(self, text: str) -> int:
-        """Calculate the number of tokens in a text"""
+        """计算文本中的 token 数量"""
         if not text:
             return 0
         return len(self.tokenizer.encode(text))
 
     def count_message_tokens(self, messages: List[dict]) -> int:
+        """计算消息列表的 token 数量"""
         return self.token_counter.count_message_tokens(messages)
 
     def update_token_count(self, input_tokens: int, completion_tokens: int = 0) -> None:
-        """Update token counts"""
-        # Only track tokens if max_input_tokens is set
+        """更新 token 计数"""
+        # 仅在设置了 max_input_tokens 时跟踪 token
         self.total_input_tokens += input_tokens
         self.total_completion_tokens += completion_tokens
         logger.info(
-            f"Token usage: Input={input_tokens}, Completion={completion_tokens}, "
-            f"Cumulative Input={self.total_input_tokens}, Cumulative Completion={self.total_completion_tokens}, "
-            f"Total={input_tokens + completion_tokens}, Cumulative Total={self.total_input_tokens + self.total_completion_tokens}"
+            f"Token 使用情况: 输入={input_tokens}, 完成={completion_tokens}, "
+            f"累计输入={self.total_input_tokens}, 累计完成={self.total_completion_tokens}, "
+            f"总计={input_tokens + completion_tokens}, 累计总计={self.total_input_tokens + self.total_completion_tokens}"
         )
 
     def check_token_limit(self, input_tokens: int) -> bool:
-        """Check if token limits are exceeded"""
+        """检查是否超过 token 限制"""
         if self.max_input_tokens is not None:
             return (self.total_input_tokens + input_tokens) <= self.max_input_tokens
-        # If max_input_tokens is not set, always return True
+        # 如果未设置 max_input_tokens，始终返回 True
         return True
 
     def get_limit_error_message(self, input_tokens: int) -> str:
-        """Generate error message for token limit exceeded"""
+        """生成 token 限制超出的错误消息"""
         if (
             self.max_input_tokens is not None
             and (self.total_input_tokens + input_tokens) > self.max_input_tokens
         ):
-            return f"Request may exceed input token limit (Current: {self.total_input_tokens}, Needed: {input_tokens}, Max: {self.max_input_tokens})"
+            return f"请求可能超过输入 token 限制 (当前: {self.total_input_tokens}, 需要: {input_tokens}, 最大: {self.max_input_tokens})"
 
-        return "Token limit exceeded"
+        return "Token 限制已超出"
 
     @staticmethod
     def format_messages(
         messages: List[Union[dict, Message]], supports_images: bool = False
     ) -> List[dict]:
         """
-        Format messages for LLM by converting them to OpenAI message format.
+        将消息格式化为 LLM 可接受的 OpenAI 消息格式。
 
         Args:
-            messages: List of messages that can be either dict or Message objects
-            supports_images: Flag indicating if the target model supports image inputs
+            messages: 消息列表，可以是字典或 Message 对象
+            supports_images: 指示目标模型是否支持图像输入的标志
 
         Returns:
-            List[dict]: List of formatted messages in OpenAI format
+            List[dict]: OpenAI 格式的格式化消息列表
 
         Raises:
-            ValueError: If messages are invalid or missing required fields
-            TypeError: If unsupported message types are provided
+            ValueError: 如果消息无效或缺少必需字段
+            TypeError: 如果提供了不支持的消息类型
 
         Examples:
             >>> msgs = [
