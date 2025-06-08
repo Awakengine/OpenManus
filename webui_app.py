@@ -784,6 +784,27 @@ class DatabaseManager:
                 "total_pages": (total + page_size - 1) // page_size
             }
 
+    def get_role_by_name(self, role_name: str) -> Optional[Dict]:
+        """根据角色名称获取角色详细信息（支持模糊查询）。"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, role_name, role_display_name, description, permissions, created_at, updated_at FROM roles WHERE role_name LIKE ?",
+                (f"%{role_name}%",)
+            )
+            role = cursor.fetchone()
+            if role:
+                return {
+                    "id": role[0],
+                    "name": role[1],
+                    "display_name": role[2],
+                    "description": role[3],
+                    "permissions": role[4].split(',') if role[4] else [],
+                    "created_at": role[5],
+                    "updated_at": role[6],
+                }
+            return None
+
     def create_role(self, name: str, display_name: str, description: str = None, permissions: List[str] = None, created_by: int = None) -> Optional[int]:
         """创建新角色。"""
         try:
@@ -1521,6 +1542,18 @@ class OpenManusWebUI:
             # 获取分页数据
             result = self.db.get_roles_paginated(page, page_size, search, status, role_name, display_name, description)
             return jsonify({"data": result, "message": "获取角色列表成功", "code": 200})
+
+        @self.app.route("/admin/roles/<role_name>", methods=["GET"])
+        def admin_get_role_by_name(role_name):
+            """根据角色名称获取角色详细信息（管理员）"""
+            if not self.is_admin():
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
+
+            role = self.db.get_role_by_name(role_name)
+            if role:
+                return jsonify({"data": role, "message": "获取角色信息成功", "code": 200})
+            else:
+                return jsonify({"data": None, "message": "角色不存在", "code": 404}), 404
 
         @self.app.route("/admin/roles", methods=["POST"])
         def admin_create_role():

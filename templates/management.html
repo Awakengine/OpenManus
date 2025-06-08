@@ -608,10 +608,135 @@
     .role-card.border-danger {
         border-color: #ff6b6b;
     }
+
+    /* 顶部提示框样式 */
+    .tips-container {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        width: auto;
+        max-width: 500px;
+        min-width: 300px;
+    }
+
+    .tips-alert {
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 500;
+        animation: slideDown 0.3s ease-out;
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .tips-alert::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: currentColor;
+    }
+
+    .tips-alert-success {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        color: #155724;
+        border-left: 4px solid #28a745;
+    }
+
+    .tips-alert-error {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        color: #721c24;
+        border-left: 4px solid #dc3545;
+    }
+
+    .tips-alert-warning {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        color: #856404;
+        border-left: 4px solid #ffc107;
+    }
+
+    .tips-alert-info {
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        color: #0c5460;
+        border-left: 4px solid #17a2b8;
+    }
+
+    .tips-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+    }
+
+    .tips-icon {
+        font-size: 16px;
+        margin-right: 4px;
+    }
+
+    .tips-close {
+        background: none;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        color: inherit;
+        opacity: 0.7;
+        padding: 0;
+        margin-left: 10px;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+    }
+
+    .tips-close:hover {
+        opacity: 1;
+        background: rgba(0, 0, 0, 0.1);
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+    }
+
+    .tips-alert.removing {
+        animation: slideUp 0.3s ease-out forwards;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- 顶部提示框容器 -->
+<div id="tipsContainer" class="tips-container"></div>
+
 <div class="container-fluid mt-4">
     <div class="row">
         <div class="col-12">
@@ -1010,6 +1135,126 @@
 
 {% block extra_js %}
 <script>
+    // 顶部提示框功能
+    function showTips(message, type = 'info', duration = 3000) {
+        const container = document.getElementById('tipsContainer');
+        if (!container) return;
+        
+        // 创建提示框元素
+        const alert = document.createElement('div');
+        alert.className = `tips-alert tips-alert-${type}`;
+        
+        // 根据类型设置图标
+        let icon = '';
+        switch(type) {
+            case 'success':
+                icon = '✓';
+                break;
+            case 'error':
+                icon = '✗';
+                break;
+            case 'warning':
+                icon = '⚠';
+                break;
+            case 'info':
+            default:
+                icon = 'ℹ';
+                break;
+        }
+        
+        alert.innerHTML = `
+            <div class="tips-content">
+                <span class="tips-icon">${icon}</span>
+                <span class="tips-message">${message}</span>
+            </div>
+            <button class="tips-close" onclick="closeTips(this)">&times;</button>
+        `;
+        
+        // 添加到容器
+        container.appendChild(alert);
+        
+        // 自动关闭
+        if (duration > 0) {
+            setTimeout(() => {
+                closeTips(alert.querySelector('.tips-close'));
+            }, duration);
+        }
+        
+        return alert;
+    }
+    
+    // 关闭提示框
+    function closeTips(closeBtn) {
+        const alert = closeBtn.closest('.tips-alert');
+        if (alert) {
+            alert.classList.add('removing');
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 300);
+        }
+    }
+    
+    // 清除所有提示框
+    function clearAllTips() {
+        const container = document.getElementById('tipsContainer');
+        if (container) {
+            container.innerHTML = '';
+        }
+    }
+    
+    // 确认对话框函数
+    function showConfirm(message) {
+        return new Promise((resolve) => {
+            const container = document.getElementById('tipsContainer');
+            if (!container) {
+                resolve(confirm(message)); // 降级到原生confirm
+                return;
+            }
+            
+            // 创建确认对话框
+            const confirmBox = document.createElement('div');
+            confirmBox.className = 'tips-alert tips-alert-warning';
+            confirmBox.style.maxWidth = '400px';
+            
+            confirmBox.innerHTML = `
+                <div class="tips-content">
+                    <span class="tips-icon">⚠</span>
+                    <span class="tips-message">${message}</span>
+                </div>
+                <div style="margin-left: 10px; display: flex; gap: 8px;">
+                    <button class="btn btn-sm btn-danger" onclick="confirmAction(true, this)">确定</button>
+                    <button class="btn btn-sm btn-secondary" onclick="confirmAction(false, this)">取消</button>
+                </div>
+            `;
+            
+            // 添加到容器
+            container.appendChild(confirmBox);
+            
+            // 设置全局回调
+            window.currentConfirmResolve = resolve;
+        });
+    }
+    
+    // 确认操作回调
+    function confirmAction(result, button) {
+        const confirmBox = button.closest('.tips-alert');
+        if (confirmBox) {
+            confirmBox.classList.add('removing');
+            setTimeout(() => {
+                if (confirmBox.parentNode) {
+                    confirmBox.parentNode.removeChild(confirmBox);
+                }
+            }, 300);
+        }
+        
+        if (window.currentConfirmResolve) {
+            window.currentConfirmResolve(result);
+            window.currentConfirmResolve = null;
+        }
+    }
+
     // 标签页切换功能
     function switchTab(tabName) {
         // 隐藏所有标签页内容
@@ -1105,7 +1350,7 @@
 
             // 表单验证
             if (!email) {
-                alert('邮箱不能为空');
+                showTips('邮箱不能为空', 'warning');
                 return;
             }
 
@@ -1129,14 +1374,14 @@
                 })
                 .then(data => {
                     if (data.code === 200) {
-                        alert('基本信息更新成功！');
+                        showTips('基本信息更新成功！', 'success');
                     } else {
-                        alert('更新失败: ' + (data.message || '未知错误'));
+                        showTips('更新失败: ' + (data.message || '未知错误'), 'error');
                     }
                 })
                 .catch(error => {
                     console.error('更新失败:', error);
-                    alert('更新失败，请稍后重试');
+                    showTips('更新失败，请稍后重试', 'error');
                 });
         });
 
@@ -1150,27 +1395,27 @@
 
         // 表单验证
         if (!oldPassword) {
-            alert('请输入当前密码');
+            showTips('请输入当前密码', 'warning');
             return;
         }
 
         if (!newPassword) {
-            alert('请输入新密码');
+            showTips('请输入新密码', 'warning');
             return;
         }
 
         if (newPassword.length < 6) {
-            alert('新密码长度至少6位');
+            showTips('新密码长度至少6位', 'warning');
             return;
         }
 
         if (!confirmPassword) {
-            alert('请确认新密码');
+            showTips('请确认新密码', 'warning');
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            alert('新密码与确认密码不一致');
+            showTips('新密码与确认密码不一致', 'warning');
             return;
         }
 
@@ -1196,7 +1441,7 @@
             })
             .then(data => {
                 if (data.code === 200) {
-                    alert('密码修改成功！请重新登录。');
+                    showTips('密码修改成功！请重新登录。', 'success');
                     document.getElementById('oldPassword').value = '';
                     document.getElementById('newPassword').value = '';
                     document.getElementById('confirmPassword').value = '';
@@ -1206,12 +1451,12 @@
                         window.location.href = '/login';
                     }
                 } else {
-                    alert('修改失败: ' + (data.message || '未知错误'));
+                    showTips('修改失败: ' + (data.message || '未知错误'), 'error');
                 }
             })
             .catch(error => {
                 console.error('修改失败:', error);
-                alert('修改失败: ' + error.message);
+                showTips('修改失败: ' + error.message, 'error');
             });
         });
     });
@@ -1231,12 +1476,12 @@
                     document.getElementById('email').value = data.data.email;
                     document.getElementById('nickname').value = data.data.nickname || '';
                 } else {
-                    alert('加载用户信息失败: ' + (data.message || '未知错误'));
+                    showTips('加载用户信息失败: ' + (data.message || '未知错误'), 'error');
                 }
             })
             .catch(error => {
                 console.error('加载用户信息失败:', error);
-                alert('加载用户信息失败，请稍后重试');
+                showTips('加载用户信息失败，请稍后重试', 'error');
             });
     }
 
@@ -1275,7 +1520,7 @@
             })
             .then(data => {
                 if (data.code !== 200) {
-                    alert('加载用户列表失败: ' + data.message);
+                    showTips('加载用户列表失败: ' + data.message, 'error');
                     return;
                 }
                 
@@ -1302,7 +1547,7 @@
             })
             .catch(error => {
                 console.error('加载用户列表失败:', error);
-                alert('加载用户列表失败，请稍后重试');
+                showTips('加载用户列表失败，请稍后重试', 'error');
             });
     }
     
@@ -1461,17 +1706,17 @@
             .then(response => response.json())
             .then(data => {
                 if (data.code === 200) {
-                    alert('用户创建成功！');
+                    showTips('用户创建成功！', 'success');
                     bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
                     document.getElementById('createUserForm').reset();
                     loadUsersPage(currentUsersPage);
                 } else {
-                    alert('创建失败: ' + data.message);
+                    showTips('创建失败: ' + data.message, 'error');
                 }
             })
             .catch(error => {
                 console.error('创建用户失败:', error);
-                alert('创建失败，请稍后重试');
+                showTips('创建失败，请稍后重试', 'error');
             });
     }
     {% endif %}
@@ -1494,15 +1739,15 @@
             })
             .then(data => {
                 if (data.code === 200) {
-                    alert('角色更新成功！');
+                    showTips('角色更新成功！', 'success');
                 } else {
-                    alert('更新失败: ' + (data.message || '未知错误'));
+                    showTips('更新失败: ' + (data.message || '未知错误'), 'error');
                     loadUsersPage(currentUsersPage); // 重新加载以恢复原状态
                 }
             })
             .catch(error => {
                 console.error('更新角色失败:', error);
-                alert('更新角色失败，请稍后重试');
+                showTips('更新角色失败，请稍后重试', 'error');
                 loadUsersPage(currentUsersPage);
             });
     }
@@ -1526,21 +1771,22 @@
             })
             .then(data => {
                 if (data.code === 200) {
-                    alert(`用户已${isActive ? '启用' : '禁用'}！`);
+                    showTips(`用户已${isActive ? '启用' : '禁用'}！`, 'success');
                     loadUsersPage(currentUsersPage);
                 } else {
-                    alert('操作失败: ' + (data.message || '未知错误'));
+                    showTips('操作失败: ' + (data.message || '未知错误'), 'error');
                 }
             })
             .catch(error => {
                 console.error('操作失败:', error);
-                alert('切换用户状态失败，请稍后重试');
+                showTips('切换用户状态失败，请稍后重试', 'error');
             });
     }
 
     // 删除用户
-    function deleteUser(userId) {
-        if (confirm('确定要删除该用户吗？此操作不可撤销！')) {
+    async function deleteUser(userId) {
+        const confirmed = await showConfirm('确定要删除该用户吗？此操作不可撤销！');
+        if (confirmed) {
             fetch(`/admin/users/${userId}`, {
                 method: 'DELETE'
             })
@@ -1552,7 +1798,7 @@
                 })
                 .then(data => {
                     if (data.code === 200) {
-                        alert('用户删除成功！');
+                        showTips('用户删除成功！', 'success');
                         // 如果当前页没有数据了，回到上一页
                         const remainingUsers = usersTotalCount - 1;
                         const maxPage = Math.ceil(remainingUsers / usersPageSize);
@@ -1562,12 +1808,12 @@
                             loadUsersPage(currentUsersPage);
                         }
                     } else {
-                        alert('删除失败: ' + (data.message || '未知错误'));
+                        showTips('删除失败: ' + (data.message || '未知错误'), 'error');
                     }
                 })
                 .catch(error => {
                     console.error('删除失败:', error);
-                    alert('删除用户失败，请稍后重试');
+                    showTips('删除用户失败，请稍后重试', 'error');
                 });
         }
     }
@@ -1771,14 +2017,14 @@
             })
             .then(data => {
                 if (data.code === 200) {
-                    alert('配置文件保存成功！');
+                    showTips('配置文件保存成功！', 'success');
                 } else {
-                    alert('保存失败: ' + (data.message || '未知错误'));
+                    showTips('保存失败: ' + (data.message || '未知错误'), 'error');
                 }
             })
             .catch(error => {
                 console.error('保存配置文件失败:', error);
-                alert('保存配置文件失败，请稍后重试');
+                showTips('保存配置文件失败，请稍后重试', 'error');
             });
     }
     {% endif %}
@@ -1910,7 +2156,7 @@
             })
             .catch(error => {
                 console.error('导出失败:', error);
-                alert('导出角色数据失败，请稍后重试');
+                showTips('导出角色数据失败，请稍后重试', 'error');
             });
     }
     
@@ -1976,7 +2222,7 @@
             })
             .then(data => {
                 if (data.code !== 200) {
-                    alert('加载角色列表失败: ' + data.message);
+                    showTips('加载角色列表失败: ' + data.message, 'error');
                     return;
                 }
                 
@@ -2003,7 +2249,7 @@
             })
             .catch(error => {
                 console.error('加载角色列表失败:', error);
-                alert('加载角色列表失败，请稍后重试');
+                showTips('加载角色列表失败，请稍后重试', 'error');
             });
     }
     
@@ -2252,7 +2498,7 @@
         const permissions = document.getElementById('rolePermissions').value.trim();
         
         if (!name || !displayName) {
-            alert('请填写角色名称和显示名称');
+            showTips('请填写角色名称和显示名称', 'warning');
             return;
         }
         
@@ -2276,41 +2522,35 @@
             })
             .then(data => {
                 if (data.code === 200) {
-                    alert('角色创建成功！');
+                    showTips('角色创建成功！', 'success');
                     bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
                     loadRoles(); // 重新加载角色列表
                 } else {
-                    alert('创建失败: ' + (data.message || '未知错误'));
+                    showTips('创建失败: ' + (data.message || '未知错误'), 'error');
                 }
             })
             .catch(error => {
                 console.error('创建角色失败:', error);
-                alert('创建角色失败，请稍后重试');
+                showTips('创建角色失败，请稍后重试', 'error');
             });
     }
     
     // 编辑角色
     function editRole(roleName) {
-        // 先获取角色信息
-        fetch(`/admin/roles`)
+        // 根据角色名称获取角色详细信息
+        fetch(`/admin/roles/${encodeURIComponent(roleName)}`)
             .then(response => response.json())
             .then(data => {
                 if (data.code !== 200) {
-                    alert('获取角色信息失败: ' + data.message);
+                    showTips('获取角色信息失败: ' + data.message, 'error');
                     return;
                 }
                 
-                const role = data.data.find(r => r.name === roleName);
-                if (!role) {
-                    alert('角色不存在');
-                    return;
-                }
-                
-                showEditRoleModal(role);
+                showEditRoleModal(data.data);
             })
             .catch(error => {
                 console.error('获取角色信息失败:', error);
-                alert('获取角色信息失败，请稍后重试');
+                showTips('获取角色信息失败，请稍后重试', 'error');
             });
     }
     
@@ -2370,7 +2610,7 @@
         const permissions = document.getElementById('editRolePermissions').value.trim();
         
         if (!displayName) {
-            alert('请填写显示名称');
+            showTips('请填写显示名称', 'warning');
             return;
         }
         
@@ -2393,22 +2633,23 @@
             })
             .then(data => {
                 if (data.code === 200) {
-                    alert('角色更新成功！');
+                    showTips('角色更新成功！', 'success');
                     bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
                     loadRoles(); // 重新加载角色列表
                 } else {
-                    alert('更新失败: ' + (data.message || '未知错误'));
+                    showTips('更新失败: ' + (data.message || '未知错误'), 'error');
                 }
             })
             .catch(error => {
                 console.error('更新角色失败:', error);
-                alert('更新角色失败，请稍后重试');
+                showTips('更新角色失败，请稍后重试', 'error');
             });
     }
     
     // 删除角色
-    function deleteRole(roleName) {
-        if (!confirm(`确定要删除角色 "${roleName}" 吗？\n\n注意：如果有用户正在使用此角色，删除操作将失败。`)) {
+    async function deleteRole(roleName) {
+        const confirmed = await showConfirm(`确定要删除角色 "${roleName}" 吗？\n\n注意：如果有用户正在使用此角色，删除操作将失败。`);
+        if (!confirmed) {
             return;
         }
         
@@ -2423,15 +2664,15 @@
             })
             .then(data => {
                 if (data.code === 200) {
-                    alert('角色删除成功！');
+                    showTips('角色删除成功！', 'success');
                     loadRoles(); // 重新加载角色列表
                 } else {
-                    alert('删除失败: ' + (data.message || '未知错误'));
+                    showTips('删除失败: ' + (data.message || '未知错误'), 'error');
                 }
             })
             .catch(error => {
                 console.error('删除角色失败:', error);
-                alert('删除角色失败，请稍后重试');
+                showTips('删除角色失败，请稍后重试', 'error');
             });
     }
     {% endif %}
