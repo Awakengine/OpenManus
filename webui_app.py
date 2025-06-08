@@ -363,6 +363,38 @@ class DatabaseManager:
                 for msg in messages
             ]
 
+    def delete_conversation(self, conversation_id: str, user_id: int) -> bool:
+        """删除指定的对话及其所有消息。"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # 首先验证对话是否属于该用户
+                cursor.execute(
+                    "SELECT user_id FROM conversations WHERE id = ?",
+                    (conversation_id,)
+                )
+                result = cursor.fetchone()
+                if not result or result[0] != user_id:
+                    return False
+                
+                # 删除对话的所有消息
+                cursor.execute(
+                    "DELETE FROM messages WHERE conversation_id = ?",
+                    (conversation_id,)
+                )
+                
+                # 删除对话
+                cursor.execute(
+                    "DELETE FROM conversations WHERE id = ? AND user_id = ?",
+                    (conversation_id, user_id)
+                )
+                
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception:
+            return False
+
     def get_all_users(self, keyword=None, role=None, status=None, date=None) -> List[Dict]:
         """获取所有用户（仅管理员），支持搜索过滤。"""
         with sqlite3.connect(self.db_path) as conn:
@@ -1107,6 +1139,17 @@ class OpenManusWebUI:
 
             messages = self.db.get_conversation_messages(conversation_id)
             return jsonify({"success": True, "data": {"messages": messages}, "message": "获取消息列表成功", "code": 200})
+
+        @self.app.route("/api/conversations/<conversation_id>", methods=["DELETE"])
+        def delete_conversation(conversation_id):
+            if "user_id" not in session:
+                return jsonify({"success": False, "data": None, "message": "未认证", "code": 401}), 401
+
+            success = self.db.delete_conversation(conversation_id, session["user_id"])
+            if success:
+                return jsonify({"success": True, "data": None, "message": "删除对话成功", "code": 200})
+            else:
+                return jsonify({"success": False, "data": None, "message": "删除对话失败，对话不存在或无权限", "code": 404}), 404
 
         @self.app.route("/api/chat", methods=["POST"])
         def api_chat():

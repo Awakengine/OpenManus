@@ -248,6 +248,59 @@
 .streaming-content {
     white-space: pre-wrap;
 }
+
+.conversation-item {
+    padding: 12px;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.conversation-item:hover {
+    background-color: #f8f9fa;
+}
+.conversation-item.active {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+}
+.conversation-content {
+    flex: 1;
+    min-width: 0;
+}
+.conversation-title {
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.conversation-time {
+    font-size: 0.85em;
+    color: #666;
+}
+.conversation-actions {
+    opacity: 0;
+    transition: opacity 0.2s;
+    margin-left: 8px;
+}
+.conversation-item:hover .conversation-actions {
+    opacity: 1;
+}
+.delete-conversation {
+    border: none;
+    background: none;
+    color: #dc3545;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+.delete-conversation:hover {
+    background-color: #dc3545;
+    color: white;
+}
 </style>
 
 <script>
@@ -549,17 +602,34 @@ function renderConversations() {
         const isActive = conv.id === currentConversationId;
         const convHtml = `
             <div class="conversation-item ${isActive ? 'active' : ''}" data-id="${conv.id}">
-                <div class="conversation-title">${conv.title}</div>
-                <div class="conversation-time">${conv.created_at || 'N/A'}</div>
+                <div class="conversation-content">
+                    <div class="conversation-title">${conv.title}</div>
+                    <div class="conversation-time">${conv.created_at || 'N/A'}</div>
+                </div>
+                <div class="conversation-actions">
+                    <button class="btn btn-sm btn-outline-danger delete-conversation" data-id="${conv.id}" title="删除对话">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
         `;
         container.append(convHtml);
     });
     
     // 绑定点击事件
-    $('.conversation-item').click(function() {
-        const convId = $(this).data('id');
+    $('.conversation-item .conversation-content').click(function() {
+        const convId = $(this).parent().data('id');
         selectConversation(convId);
+    });
+    
+    // 绑定删除按钮事件
+    $('.delete-conversation').click(function(e) {
+        e.stopPropagation();
+        const convId = $(this).data('id');
+        const conv = conversations.find(c => c.id === convId);
+        if (confirm(`确定要删除对话 "${conv.title}" 吗？此操作不可撤销。`)) {
+            deleteConversation(convId);
+        }
     });
 }
 
@@ -590,6 +660,38 @@ function loadMessages(convId) {
         },
         error: function() {
             console.error('Failed to load messages');
+        }
+    });
+}
+
+function deleteConversation(convId) {
+    $.ajax({
+        url: `/api/conversations/${convId}`,
+        method: 'DELETE',
+        success: function(response) {
+            if (response.code === 200) {
+                // 从本地数组中移除对话
+                conversations = conversations.filter(c => c.id !== convId);
+                
+                // 如果删除的是当前对话，清空聊天区域
+                if (currentConversationId === convId) {
+                    currentConversationId = null;
+                    $('#conversationTitle').text('选择对话');
+                    $('#chatMessages').empty();
+                    $('#welcomeMessage').show();
+                }
+                
+                // 重新渲染对话列表
+                renderConversations();
+                
+                // 显示成功消息
+                showMessage('对话删除成功', 'success');
+            } else {
+                showMessage(response.message || '删除对话失败', 'error');
+            }
+        },
+        error: function() {
+            showMessage('删除对话失败，请稍后重试', 'error');
         }
     });
 }
@@ -653,6 +755,27 @@ function createNewConversationAndSend(message) {
 function enableChat() {
     $('#messageInput').prop('disabled', false);
     $('#sendBtn').prop('disabled', false);
+}
+
+function showMessage(message, type = 'info') {
+    // 创建提示消息元素
+    const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-info';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    // 添加到页面
+    $('body').append(alertHtml);
+    
+    // 3秒后自动消失
+    setTimeout(function() {
+        $('.alert').fadeOut(function() {
+            $(this).remove();
+        });
+    }, 3000);
 }
 
 function checkUserAuth() {
