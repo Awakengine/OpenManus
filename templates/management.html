@@ -2588,7 +2588,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                        <button type="button" class="btn btn-primary" onclick="updateRole('${role.name}')">保存修改</button>
+                        <button type="button" class="btn btn-primary" onclick="updateRole(${role.id})">保存修改</button>
                     </div>
                 </div>
             </div>
@@ -2604,7 +2604,7 @@
     }
     
     // 更新角色
-    function updateRole(roleName) {
+    function updateRole(roleId) {
         const displayName = document.getElementById('editRoleDisplayName').value.trim();
         const description = document.getElementById('editRoleDescription').value.trim();
         const permissions = document.getElementById('editRolePermissions').value.trim();
@@ -2614,7 +2614,7 @@
             return;
         }
         
-        fetch(`/admin/roles/${roleName}`, {
+        fetch(`/admin/roles/${roleId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
