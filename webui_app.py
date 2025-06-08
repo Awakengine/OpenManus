@@ -386,6 +386,7 @@ class DatabaseManager:
                     "updated_at": user[10],
                     "created_by_name": user[11],
                     "updated_by_name": user[12],
+                    # 注意：出于安全考虑，不返回password_hash字段
                 }
                 for user in users
             ]

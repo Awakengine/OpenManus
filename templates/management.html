@@ -800,6 +800,40 @@
                                     </tbody>
                                 </table>
                             </div>
+                            
+                            <!-- 分页组件 -->
+                            <div class="d-flex justify-content-between align-items-center mt-3" id="usersPagination" style="display: none !important;">
+                                <div class="pagination-info">
+                                    <span class="text-muted">显示第 <span id="usersStartIndex">1</span> - <span id="usersEndIndex">10</span> 条，共 <span id="usersTotalCount">0</span> 条记录</span>
+                                </div>
+                                <div class="pagination-controls d-flex align-items-center">
+                                    <div class="btn-group me-3" role="group">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="usersPrevBtn" onclick="loadUsersPage(currentUsersPage - 1)" disabled>
+                                            <i class="fas fa-chevron-left"></i> 上一页
+                                        </button>
+                                        <span class="btn btn-outline-secondary btn-sm disabled" id="usersPageInfo">第 1 页，共 1 页</span>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="usersNextBtn" onclick="loadUsersPage(currentUsersPage + 1)" disabled>
+                                            下一页 <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                    <select class="btn btn-outline-secondary btn-sm" id="usersPageSize" onchange="changeUsersPageSize(this.value)" style="width: auto; height: auto; border: 1px solid #6c757d; background-color: white; color: #495057 !important; cursor: pointer;">
+                                        <style>
+                                            #usersPageSize option {
+                                                color: #495057 !important;
+                                                background-color: white !important;
+                                            }
+                                            #usersPageSize:focus {
+                                                color: #495057 !important;
+                                                background-color: white !important;
+                                            }
+                                        </style>
+                                        <option value="10">每页 10 条</option>
+                                        <option value="20">每页 20 条</option>
+                                        <option value="50">每页 50 条</option>
+                                        <option value="100">每页 100 条</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         {% endif %}
 
@@ -965,7 +999,20 @@
         document.getElementById(tabName).classList.add('active');
         
         // 激活对应的按钮
-        event.target.classList.add('active');
+        if (event && event.target) {
+            event.target.classList.add('active');
+        } else {
+            // 如果没有event对象，通过tabName找到对应按钮
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(button => {
+                if (button.getAttribute('onclick').includes(tabName)) {
+                    button.classList.add('active');
+                }
+            });
+        }
+        
+        // 保存当前选择的tab到localStorage
+        localStorage.setItem('activeTab', tabName);
         
         // 根据标签页加载相应数据
         if (tabName === 'users') {
@@ -978,6 +1025,17 @@
     // 页面加载时初始化
     document.addEventListener('DOMContentLoaded', function () {
         loadUserProfile();
+        
+        // 恢复上次选择的tab，默认为profile
+        const activeTab = localStorage.getItem('activeTab') || 'profile';
+        if (activeTab !== 'profile') {
+            switchTab(activeTab);
+        }
+        
+        // 如果当前激活的是用户管理tab，确保加载用户数据
+        if (activeTab === 'users') {
+            loadUsers();
+        }
         
         // 保存基本信息
         document.getElementById('profileForm').addEventListener('submit', function (e) {
@@ -1124,9 +1182,32 @@
     }
 
     {% if session.role in ['admin', 'super_admin', 'user_admin'] %}
+    // 分页相关全局变量
+    let currentUsersPage = 1;
+    let usersPageSize = 10;
+    let usersTotalPages = 1;
+    let usersTotalCount = 0;
+    let currentUsersSearchParams = {};
+    
     // 加载用户列表
     function loadUsers() {
-        fetch('/admin/users')
+        loadUsersPage(1);
+    }
+    
+    // 加载指定页的用户数据
+    function loadUsersPage(page) {
+        if (page < 1 || page > usersTotalPages) return;
+        
+        currentUsersPage = page;
+        
+        // 构建查询参数
+        const params = new URLSearchParams(currentUsersSearchParams);
+        params.append('page', page);
+        params.append('page_size', usersPageSize);
+        
+        const url = '/admin/users' + (params.toString() ? '?' + params.toString() : '');
+        
+        fetch(url)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('网络请求失败: ' + response.status);
@@ -1139,73 +1220,127 @@
                     return;
                 }
                 
-                const users = Array.isArray(data.data) ? data.data : [];
-                const tbody = document.querySelector('#usersTable tbody');
-                tbody.innerHTML = '';
-
-                users.forEach(user => {
-                    const row = document.createElement('tr');
-                    const canModifyRole = '{{ session.role }}' === 'super_admin' || '{{ session.role }}' === 'role_admin';
-                    const canModifyUser = '{{ session.role }}' === 'super_admin' || '{{ session.role }}' === 'user_admin';
-                    
-                    let roleSelect = '';
-                    if (canModifyRole) {
-                        roleSelect = `
-                            <select class="form-select form-select-sm" onchange="updateUserRole(${user.id}, this.value)">
-                                <option value="user" ${user.role === 'user' ? 'selected' : ''}>普通用户</option>
-                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>管理员</option>
-                                <option value="user_admin" ${user.role === 'user_admin' ? 'selected' : ''}>用户管理员</option>
-                                <option value="role_admin" ${user.role === 'role_admin' ? 'selected' : ''}>角色管理员</option>
-                                <option value="super_admin" ${user.role === 'super_admin' ? 'selected' : ''}>超级管理员</option>
-                            </select>
-                        `;
-                    } else {
-                        const roleNames = {
-                            'user': '普通用户',
-                            'admin': '管理员',
-                            'user_admin': '用户管理员',
-                            'role_admin': '角色管理员',
-                            'super_admin': '超级管理员'
-                        };
-                        roleSelect = roleNames[user.role] || user.role;
-                    }
-                    
-                    let actionButtons = '';
-                    if (canModifyUser) {
-                        actionButtons = `
-                            <button class="btn btn-xs ${user.is_active ? 'btn-warning' : 'btn-success'}"
-                                    onclick="toggleUserStatus(${user.id}, ${!user.is_active})"
-                                    style="padding: 4px 8px; font-size: 12px; margin-right: 4px;">
-                                ${user.is_active ? '禁用' : '启用'}
-                            </button>
-                            <button class="btn btn-xs btn-danger"
-                                    onclick="deleteUser(${user.id})"
-                                    style="padding: 4px 8px; font-size: 12px;">
-                                删除
-                            </button>
-                        `;
-                    }
-                    
-                    row.innerHTML = `
-                        <td>${user.username}</td>
-                        <td>${user.nickname || '-'}</td>
-                        <td>${user.email}</td>
-                        <td>${roleSelect}</td>
-                        <td>
-                            <span class="badge ${user.is_active ? 'bg-success' : 'bg-secondary'}">
-                                ${user.is_active ? '活跃' : '禁用'}
-                            </span>
-                        </td>
-                        <td>${user.created_at || 'N/A'}</td>
-                        <td>${actionButtons}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
+                // 处理分页数据
+                const responseData = data.data || {};
+                const users = Array.isArray(responseData.users) ? responseData.users : 
+                             Array.isArray(responseData) ? responseData : [];
+                
+                // 更新分页信息
+                if (responseData.total !== undefined) {
+                    usersTotalCount = responseData.total;
+                    usersTotalPages = Math.ceil(usersTotalCount / usersPageSize);
+                } else {
+                    // 兼容旧接口，如果没有分页信息，则假设只有一页
+                    usersTotalCount = users.length;
+                    usersTotalPages = 1;
+                }
+                
+                // 渲染用户表格
+                renderUsersTable(users);
+                
+                // 更新分页组件
+                updateUsersPagination();
             })
             .catch(error => {
                 console.error('加载用户列表失败:', error);
                 alert('加载用户列表失败，请稍后重试');
             });
+    }
+    
+    // 渲染用户表格
+    function renderUsersTable(users) {
+        const tbody = document.querySelector('#usersTable tbody');
+        tbody.innerHTML = '';
+
+        users.forEach(user => {
+            const row = document.createElement('tr');
+            const canModifyRole = '{{ session.role }}' === 'super_admin' || '{{ session.role }}' === 'role_admin';
+            const canModifyUser = '{{ session.role }}' === 'super_admin' || '{{ session.role }}' === 'user_admin';
+            
+            let roleSelect = '';
+            if (canModifyRole) {
+                roleSelect = `
+                    <select class="form-select form-select-sm" onchange="updateUserRole(${user.id}, this.value)">
+                        <option value="user" ${user.role === 'user' ? 'selected' : ''}>普通用户</option>
+                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>管理员</option>
+                        <option value="user_admin" ${user.role === 'user_admin' ? 'selected' : ''}>用户管理员</option>
+                        <option value="role_admin" ${user.role === 'role_admin' ? 'selected' : ''}>角色管理员</option>
+                        <option value="super_admin" ${user.role === 'super_admin' ? 'selected' : ''}>超级管理员</option>
+                    </select>
+                `;
+            } else {
+                const roleNames = {
+                    'user': '普通用户',
+                    'admin': '管理员',
+                    'user_admin': '用户管理员',
+                    'role_admin': '角色管理员',
+                    'super_admin': '超级管理员'
+                };
+                roleSelect = roleNames[user.role] || user.role;
+            }
+            
+            let actionButtons = '';
+            if (canModifyUser) {
+                actionButtons = `
+                    <button class="btn btn-xs ${user.is_active ? 'btn-warning' : 'btn-success'}"
+                            onclick="toggleUserStatus(${user.id}, ${!user.is_active})"
+                            style="padding: 4px 8px; font-size: 12px; margin-right: 4px;">
+                        ${user.is_active ? '禁用' : '启用'}
+                    </button>
+                    <button class="btn btn-xs btn-danger"
+                            onclick="deleteUser(${user.id})"
+                            style="padding: 4px 8px; font-size: 12px;">
+                        删除
+                    </button>
+                `;
+            }
+            
+            row.innerHTML = `
+                <td>${user.username}</td>
+                <td>${user.nickname || '-'}</td>
+                <td>${user.email}</td>
+                <td>${roleSelect}</td>
+                <td>
+                    <span class="badge ${user.is_active ? 'bg-success' : 'bg-secondary'}">
+                        ${user.is_active ? '活跃' : '禁用'}
+                    </span>
+                </td>
+                <td>${user.created_at || 'N/A'}</td>
+                <td>${actionButtons}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    
+    // 更新分页组件
+    function updateUsersPagination() {
+        const paginationDiv = document.getElementById('usersPagination');
+        const startIndex = (currentUsersPage - 1) * usersPageSize + 1;
+        const endIndex = Math.min(currentUsersPage * usersPageSize, usersTotalCount);
+        
+        // 更新分页信息
+        document.getElementById('usersStartIndex').textContent = usersTotalCount > 0 ? startIndex : 0;
+        document.getElementById('usersEndIndex').textContent = endIndex;
+        document.getElementById('usersTotalCount').textContent = usersTotalCount;
+        document.getElementById('usersPageInfo').textContent = `第 ${currentUsersPage} 页，共 ${usersTotalPages} 页`;
+        
+        // 更新按钮状态
+        document.getElementById('usersPrevBtn').disabled = currentUsersPage <= 1;
+        document.getElementById('usersNextBtn').disabled = currentUsersPage >= usersTotalPages;
+        
+        // 显示或隐藏分页组件
+        if (usersTotalCount > usersPageSize) {
+            paginationDiv.style.display = 'flex';
+        } else {
+            paginationDiv.style.display = 'none';
+        }
+    }
+    
+    // 改变每页显示数量
+    function changeUsersPageSize(newPageSize) {
+        usersPageSize = parseInt(newPageSize);
+        currentUsersPage = 1;
+        loadUsersPage(1);
     }
 
     // 搜索用户
@@ -1216,96 +1351,16 @@
         const status = document.getElementById('userStatusFilter').value;
         const date = document.getElementById('userDateFilter').value;
         
-        // 构建查询参数
-        const params = new URLSearchParams();
-        if (keyword) params.append('keyword', keyword);
-        if (role) params.append('role', role);
-        if (status) params.append('status', status);
-        if (date) params.append('date', date);
+        // 保存搜索参数
+        currentUsersSearchParams = {};
+        if (keyword) currentUsersSearchParams.keyword = keyword;
+        if (role) currentUsersSearchParams.role = role;
+        if (status) currentUsersSearchParams.status = status;
+        if (date) currentUsersSearchParams.date = date;
         
-        // 发送搜索请求
-        const url = '/admin/users' + (params.toString() ? '?' + params.toString() : '');
-        
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('网络请求失败: ' + response.status);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.code !== 200) {
-                    alert('搜索用户失败: ' + data.message);
-                    return;
-                }
-                
-                const users = Array.isArray(data.data) ? data.data : [];
-                const tbody = document.querySelector('#usersTable tbody');
-                tbody.innerHTML = '';
-
-                users.forEach(user => {
-                    const row = document.createElement('tr');
-                    const canModifyRole = '{{ session.role }}' === 'super_admin' || '{{ session.role }}' === 'role_admin';
-                    const canModifyUser = '{{ session.role }}' === 'super_admin' || '{{ session.role }}' === 'user_admin';
-                    
-                    let roleSelect = '';
-                    if (canModifyRole) {
-                        roleSelect = `
-                            <select class="form-select form-select-sm" onchange="updateUserRole(${user.id}, this.value)">
-                                <option value="user" ${user.role === 'user' ? 'selected' : ''}>普通用户</option>
-                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>管理员</option>
-                                <option value="user_admin" ${user.role === 'user_admin' ? 'selected' : ''}>用户管理员</option>
-                                <option value="role_admin" ${user.role === 'role_admin' ? 'selected' : ''}>角色管理员</option>
-                                <option value="super_admin" ${user.role === 'super_admin' ? 'selected' : ''}>超级管理员</option>
-                            </select>
-                        `;
-                    } else {
-                        const roleNames = {
-                            'user': '普通用户',
-                            'admin': '管理员',
-                            'user_admin': '用户管理员',
-                            'role_admin': '角色管理员',
-                            'super_admin': '超级管理员'
-                        };
-                        roleSelect = roleNames[user.role] || user.role;
-                    }
-                    
-                    let actionButtons = '';
-                    if (canModifyUser) {
-                        actionButtons = `
-                            <button class="btn btn-xs ${user.is_active ? 'btn-warning' : 'btn-success'}"
-                                    onclick="toggleUserStatus(${user.id}, ${!user.is_active})"
-                                    style="padding: 4px 8px; font-size: 12px; margin-right: 4px;">
-                                ${user.is_active ? '禁用' : '启用'}
-                            </button>
-                            <button class="btn btn-xs btn-danger"
-                                    onclick="deleteUser(${user.id})"
-                                    style="padding: 4px 8px; font-size: 12px;">
-                                删除
-                            </button>
-                        `;
-                    }
-                    
-                    row.innerHTML = `
-                        <td>${user.username}</td>
-                        <td>${user.nickname || '-'}</td>
-                        <td>${user.email}</td>
-                        <td>${roleSelect}</td>
-                        <td>
-                            <span class="badge ${user.is_active ? 'bg-success' : 'bg-secondary'}">
-                                ${user.is_active ? '活跃' : '禁用'}
-                            </span>
-                        </td>
-                        <td>${user.created_at || 'N/A'}</td>
-                        <td>${actionButtons}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            })
-            .catch(error => {
-                console.error('搜索用户失败:', error);
-                alert('搜索用户失败，请稍后重试');
-            });
+        // 重置到第一页并执行搜索
+        currentUsersPage = 1;
+        loadUsersPage(1);
     }
 
     // 重置用户搜索
@@ -1314,6 +1369,12 @@
         document.getElementById('userRoleFilter').value = '';
         document.getElementById('userStatusFilter').value = '';
         document.getElementById('userDateFilter').value = '';
+        
+        // 清空搜索参数
+        currentUsersSearchParams = {};
+        
+        // 重置分页并加载数据
+        currentUsersPage = 1;
         loadUsers();
     }
 
@@ -1346,7 +1407,7 @@
                     alert('用户创建成功！');
                     bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
                     document.getElementById('createUserForm').reset();
-                    loadUsers();
+                    loadUsersPage(currentUsersPage);
                 } else {
                     alert('创建失败: ' + data.message);
                 }
@@ -1379,13 +1440,13 @@
                     alert('角色更新成功！');
                 } else {
                     alert('更新失败: ' + (data.message || '未知错误'));
-                    loadUsers(); // 重新加载以恢复原状态
+                    loadUsersPage(currentUsersPage); // 重新加载以恢复原状态
                 }
             })
             .catch(error => {
                 console.error('更新角色失败:', error);
                 alert('更新角色失败，请稍后重试');
-                loadUsers();
+                loadUsersPage(currentUsersPage);
             });
     }
     {% endif %}
@@ -1409,7 +1470,7 @@
             .then(data => {
                 if (data.code === 200) {
                     alert(`用户已${isActive ? '启用' : '禁用'}！`);
-                    loadUsers();
+                    loadUsersPage(currentUsersPage);
                 } else {
                     alert('操作失败: ' + (data.message || '未知错误'));
                 }
@@ -1435,7 +1496,14 @@
                 .then(data => {
                     if (data.code === 200) {
                         alert('用户删除成功！');
-                        loadUsers();
+                        // 如果当前页没有数据了，回到上一页
+                        const remainingUsers = usersTotalCount - 1;
+                        const maxPage = Math.ceil(remainingUsers / usersPageSize);
+                        if (currentUsersPage > maxPage && maxPage > 0) {
+                            loadUsersPage(maxPage);
+                        } else {
+                            loadUsersPage(currentUsersPage);
+                        }
                     } else {
                         alert('删除失败: ' + (data.message || '未知错误'));
                     }
@@ -1509,7 +1577,7 @@
             .then(data => {
                 if (data.code === 200) {
                     alert(`导入成功！共导入 ${data.data.imported} 个用户，跳过 ${data.data.skipped} 个重复用户`);
-                    loadUsers();
+                    loadUsersPage(currentUsersPage);
                 } else {
                     alert('导入失败: ' + (data.message || '未知错误'));
                 }
