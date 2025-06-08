@@ -536,6 +536,207 @@
     background-color: #dc3545;
     color: white;
 }
+
+/* 消息布局样式 */
+.message {
+    display: flex;
+    margin-bottom: 16px;
+    max-width: 100%;
+}
+
+/* 用户消息靠右 */
+.message.user-message {
+    justify-content: flex-end;
+}
+
+/* 助手和系统消息靠左 */
+.message.assistant-message,
+.message.system-message {
+    justify-content: flex-start;
+}
+
+.message-content {
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    word-wrap: break-word;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+/* 用户消息样式 */
+.message.user-message .message-content {
+    background: linear-gradient(135deg, #007bff, #5dade2);
+    color: white;
+    border-bottom-right-radius: 6px;
+}
+
+/* 助手消息样式 */
+.message.assistant-message .message-content {
+    background: white;
+    color: #333;
+    border: 1px solid #e9ecef;
+    border-bottom-left-radius: 6px;
+}
+
+/* 系统消息样式 */
+.message.system-message .message-content {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    text-align: center;
+    font-style: italic;
+}
+
+/* 消息编辑相关样式 */
+.message-actions {
+    opacity: 0;
+    transition: opacity 0.2s;
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+}
+
+.message:hover .message-actions {
+    opacity: 1;
+}
+
+.edit-message-btn {
+    padding: 2px 6px;
+    font-size: 12px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #6c757d;
+}
+
+.edit-message-btn:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.message-edit-form {
+    margin-top: 8px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.message-edit-textarea {
+    width: 100%;
+    min-height: 60px;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.message-edit-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.message-edit-actions .btn {
+    padding: 4px 12px;
+    font-size: 12px;
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+/* 用户消息头部右对齐 */
+.message.user-message .message-header {
+    justify-content: flex-end;
+    flex-direction: row-reverse;
+}
+
+/* 助手和系统消息头部左对齐 */
+.message.assistant-message .message-header,
+.message.system-message .message-header {
+    justify-content: flex-start;
+}
+
+.message-sender {
+    font-weight: 500;
+}
+
+.message-time {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* 用户消息时间和发送者颜色调整 */
+.message.user-message .message-time,
+.message.user-message .message-sender {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.message-text {
+    line-height: 1.5;
+}
+
+/* Thinking容器样式 */
+.thinking-container {
+    margin: 10px 0;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    overflow: hidden;
+}
+
+.thinking-header {
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s ease;
+    user-select: none;
+}
+
+.thinking-header:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+.thinking-icon {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.thinking-title {
+    flex: 1;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.thinking-toggle {
+    transition: transform 0.2s ease;
+    font-size: 12px;
+}
+
+.thinking-content {
+    padding: 16px;
+    background-color: #ffffff;
+    border-top: 1px solid #e9ecef;
+    line-height: 1.6;
+    color: #495057;
+    font-size: 14px;
+}
+
+.thinking-content br {
+    margin-bottom: 8px;
+}
 </style>
 
 <script>
@@ -878,7 +1079,19 @@ function addMessage(type, content) {
     const icon = $('<i>').addClass(`fas ${type === 'user' ? 'fa-user' : type === 'assistant' ? 'fa-robot' : 'fa-info-circle'}`);
     const sender = $('<span>').addClass('message-sender').text(type === 'user' ? '您' : type === 'assistant' ? 'OpenManus' : '系统');
     const time = $('<span>').addClass('message-time').text(new Date().toLocaleTimeString());
-    const messageText = $('<div>').addClass('message-text').text(content);
+    const processedContent = processThinkingTags(content);
+    const messageText = $('<div>').addClass('message-text').html(processedContent);
+    
+    // 为用户消息添加编辑按钮
+    if (type === 'user') {
+        const messageActions = $('<div>').addClass('message-actions');
+        const editBtn = $('<button>').addClass('btn btn-sm btn-outline-secondary edit-message-btn')
+            .html('<i class="fas fa-edit"></i>')
+            .attr('title', '编辑消息')
+            .data('original-content', content);
+        messageActions.append(editBtn);
+        messageHeader.append(messageActions);
+    }
     
     messageHeader.append(icon, sender, time);
     messageContent.append(messageHeader, messageText);
@@ -927,7 +1140,70 @@ function finalizeStreamingMessage(messageId) {
     if (messageElement.length) {
         messageElement.find('.cursor').remove();
         const content = messageElement.find('.streaming-content').text();
-        messageElement.find('.message-text').html(content.replace(/\n/g, '<br>'));
+        const processedContent = processThinkingTags(content);
+        messageElement.find('.message-text').html(processedContent);
+    }
+}
+
+function processThinkingTags(content) {
+    // 处理多个相连的Thinking标签，将它们合并
+    let processedContent = content;
+    
+    // 匹配所有Thinking标签并处理
+    const thinkingRegex = /<Thinking>([\s\S]*?)<\/Thinking>/g;
+    let thinkingBlocks = [];
+    let match;
+    
+    while ((match = thinkingRegex.exec(content)) !== null) {
+        thinkingBlocks.push(match[1].trim());
+    }
+    
+    if (thinkingBlocks.length > 0) {
+        // 合并所有thinking内容
+        const combinedThinking = thinkingBlocks.join('\n\n');
+        
+        // 创建可折叠的HTML结构
+        const thinkingHtml = `
+            <div class="thinking-container">
+                <div class="thinking-header" onclick="toggleThinking(this)">
+                    <i class="fas fa-brain thinking-icon"></i>
+                    <span class="thinking-title">思考过程</span>
+                    <i class="fas fa-chevron-down thinking-toggle"></i>
+                </div>
+                <div class="thinking-content" style="display: none;">
+                    ${combinedThinking.replace(/\n/g, '<br>')}
+                </div>
+            </div>
+        `;
+        
+        // 移除原始的Thinking标签并替换为HTML结构
+        processedContent = content.replace(thinkingRegex, '').trim();
+        
+        // 如果还有其他内容，在thinking后面添加
+        if (processedContent) {
+            processedContent = thinkingHtml + '<br><br>' + processedContent.replace(/\n/g, '<br>');
+        } else {
+            processedContent = thinkingHtml;
+        }
+    } else {
+        // 没有thinking标签，正常处理换行
+        processedContent = content.replace(/\n/g, '<br>');
+    }
+    
+    return processedContent;
+}
+
+function toggleThinking(header) {
+    const container = $(header).closest('.thinking-container');
+    const content = container.find('.thinking-content');
+    const toggle = container.find('.thinking-toggle');
+    
+    if (content.is(':visible')) {
+        content.slideUp(200);
+        toggle.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+    } else {
+        content.slideDown(200);
+        toggle.removeClass('fa-chevron-down').addClass('fa-chevron-up');
     }
 }
 
@@ -1239,5 +1515,185 @@ function setupLoginEvents() {
         sendMessage();
     });
 }
+
+// 消息编辑功能
+$(document).on('click', '.edit-message-btn', function() {
+    const messageDiv = $(this).closest('.message');
+    const messageText = messageDiv.find('.message-text');
+    const originalContent = $(this).data('original-content');
+    
+    // 如果已经在编辑状态，则不重复创建编辑表单
+    if (messageDiv.find('.message-edit-form').length > 0) {
+        return;
+    }
+    
+    // 创建编辑表单
+    const editForm = $(`
+        <div class="message-edit-form">
+            <textarea class="message-edit-textarea" placeholder="编辑您的消息...">${originalContent}</textarea>
+            <div class="message-edit-actions">
+                <button class="btn btn-sm btn-secondary cancel-edit-btn">取消</button>
+                <button class="btn btn-sm btn-primary save-edit-btn">保存并重新发送</button>
+            </div>
+        </div>
+    `);
+    
+    // 隐藏原始消息文本
+    messageText.hide();
+    
+    // 添加编辑表单
+    messageDiv.find('.message-content').append(editForm);
+    
+    // 聚焦到文本框
+    editForm.find('.message-edit-textarea').focus();
+});
+
+// 取消编辑
+$(document).on('click', '.cancel-edit-btn', function() {
+    const messageDiv = $(this).closest('.message');
+    const messageText = messageDiv.find('.message-text');
+    const editForm = messageDiv.find('.message-edit-form');
+    
+    // 显示原始消息文本
+    messageText.show();
+    
+    // 移除编辑表单
+    editForm.remove();
+});
+
+// 保存编辑并重新发送
+$(document).on('click', '.save-edit-btn', function() {
+    const messageDiv = $(this).closest('.message');
+    const messageText = messageDiv.find('.message-text');
+    const editForm = messageDiv.find('.message-edit-form');
+    const newContent = editForm.find('.message-edit-textarea').val().trim();
+    
+    if (!newContent) {
+        showTips('消息内容不能为空', 'warning');
+        return;
+    }
+    
+    // 更新消息内容
+    messageText.text(newContent).show();
+    
+    // 更新编辑按钮的原始内容数据
+    messageDiv.find('.edit-message-btn').data('original-content', newContent);
+    
+    // 移除编辑表单
+    editForm.remove();
+    
+    // 删除当前消息之后的所有消息（包括AI回复）
+    messageDiv.nextAll('.message').remove();
+    
+    // 重新发送消息
+    if (currentConversationId || isGuest) {
+        sendMessageWithContent(newContent);
+    } else {
+        // 如果没有当前对话，创建新对话并发送
+        createNewConversationAndSend(newContent);
+    }
+    
+    showTips('消息已更新并重新发送', 'success');
+});
+
+// 发送指定内容的消息
+function sendMessageWithContent(content) {
+    if (!content.trim()) return;
+    
+    // 显示加载指示器
+    $('#loadingIndicator').show();
+    $('#sendBtn').prop('disabled', true);
+    
+    const requestData = {
+        message: content,
+        conversation_id: currentConversationId
+    };
+    
+    // 发送请求
+    fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let messageId = 'msg_' + Date.now();
+        let hasStarted = false;
+        
+        function readStream() {
+            return reader.read().then(({ done, value }) => {
+                if (done) {
+                    $('#loadingIndicator').hide();
+                    $('#sendBtn').prop('disabled', false);
+                    
+                    if (hasStarted) {
+                        finalizeStreamingMessage(messageId);
+                    }
+                    
+                    // 重新加载对话列表
+                    if (!isGuest) {
+                        loadConversations();
+                    }
+                    return;
+                }
+                
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') {
+                            $('#loadingIndicator').hide();
+                            $('#sendBtn').prop('disabled', false);
+                            
+                            if (hasStarted) {
+                                finalizeStreamingMessage(messageId);
+                            }
+                            
+                            if (!isGuest) {
+                                loadConversations();
+                            }
+                            return;
+                        }
+                        
+                        try {
+                            const parsed = JSON.parse(data);
+                            if (parsed.content) {
+                                if (!hasStarted) {
+                                    addStreamingMessage('assistant', '', messageId);
+                                    hasStarted = true;
+                                }
+                                appendToStreamingMessage(messageId, parsed.content);
+                            }
+                        } catch (e) {
+                            console.error('Error parsing JSON:', e);
+                        }
+                    }
+                }
+                
+                return readStream();
+            });
+        }
+        
+        return readStream();
+    })
+    .catch(error => {
+        $('#loadingIndicator').hide();
+        $('#sendBtn').prop('disabled', false);
+        console.error('Fetch error:', error);
+        addMessage('system', '网络错误，请重试');
+    });
+}
+
 </script>
 {% endblock %}

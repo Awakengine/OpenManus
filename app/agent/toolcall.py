@@ -77,6 +77,10 @@ class ToolCallAgent(ReActAgent):
             response.tool_calls if response and response.tool_calls else []
         )
         content = response.content if response and response.content else ""
+        
+        # Wrap thinking content with Thinking tags if content exists
+        if content and content.strip():
+            content = f"<Thinking>\n{content}\n</Thinking>"
 
         # Log response info
         logger.info(f"✨ {self.name}'s thoughts: {content}")
