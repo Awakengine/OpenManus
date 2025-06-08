@@ -1035,6 +1035,17 @@ function sendMessage() {
                         try {
                             const parsed = JSON.parse(data);
                             if (parsed.type === 'content') {
+                                // 检测步骤信息并更新加载指示器
+                                const stepMatch = parsed.content.match(/📝 \*\*步骤 (\d+):\*\*/);
+                                if (stepMatch) {
+                                    const stepNumber = stepMatch[1];
+                                    $('#loadingIndicator p').text(`OpenManus 正在思考... (步骤 ${stepNumber})`);
+                                } else if (parsed.content.includes('🤔 开始思考...')) {
+                                    $('#loadingIndicator p').text('OpenManus 正在思考... (初始化)');
+                                } else if (parsed.content.includes('✅ **最终回复:**')) {
+                                    $('#loadingIndicator p').text('OpenManus 正在思考... (生成回复)');
+                                }
+                                
                                 appendToStreamingMessage(assistantMessageId, parsed.content);
                             } else if (parsed.type === 'error') {
                                 $('#loadingIndicator').hide();
@@ -1604,18 +1615,24 @@ function sendMessageWithContent(content) {
     $('#loadingIndicator').show();
     $('#sendBtn').prop('disabled', true);
     
-    const requestData = {
-        message: content,
-        conversation_id: currentConversationId
+    // 创建助手消息容器，准备接收流式输出
+    const assistantMessageId = 'msg-' + Date.now();
+    addStreamingMessage('assistant', '', assistantMessageId);
+    
+    // 发送消息到后端并接收流式响应
+    const endpoint = isGuest ? '/api/chat-guest-stream' : '/api/chat-stream';
+    const data = isGuest ? { message: content } : { 
+        message: content, 
+        conversation_id: currentConversationId 
     };
     
-    // 发送请求
-    fetch('/api/chat', {
+    // 使用fetch API支持流式响应
+    fetch(endpoint, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: JSON.stringify(requestData)
+        body: new URLSearchParams(data)
     })
     .then(response => {
         if (!response.ok) {
@@ -1625,61 +1642,63 @@ function sendMessageWithContent(content) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
-        let messageId = 'msg_' + Date.now();
-        let hasStarted = false;
         
         function readStream() {
             return reader.read().then(({ done, value }) => {
                 if (done) {
                     $('#loadingIndicator').hide();
                     $('#sendBtn').prop('disabled', false);
-                    
-                    if (hasStarted) {
-                        finalizeStreamingMessage(messageId);
-                    }
-                    
-                    // 重新加载对话列表
-                    if (!isGuest) {
-                        loadConversations();
-                    }
                     return;
                 }
                 
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
-                buffer = lines.pop();
+                buffer = lines.pop(); // 保留不完整的行
                 
-                for (const line of lines) {
+                lines.forEach(line => {
                     if (line.startsWith('data: ')) {
                         const data = line.slice(6);
                         if (data === '[DONE]') {
                             $('#loadingIndicator').hide();
                             $('#sendBtn').prop('disabled', false);
-                            
-                            if (hasStarted) {
-                                finalizeStreamingMessage(messageId);
-                            }
-                            
-                            if (!isGuest) {
-                                loadConversations();
-                            }
                             return;
                         }
                         
                         try {
                             const parsed = JSON.parse(data);
-                            if (parsed.content) {
-                                if (!hasStarted) {
-                                    addStreamingMessage('assistant', '', messageId);
-                                    hasStarted = true;
+                            if (parsed.type === 'content') {
+                                // 检测步骤信息并更新加载指示器
+                                const stepMatch = parsed.content.match(/📝 \*\*步骤 (\d+):\*\*/);
+                                if (stepMatch) {
+                                    const stepNumber = stepMatch[1];
+                                    $('#loadingIndicator p').text(`OpenManus 正在思考... (步骤 ${stepNumber})`);
+                                } else if (parsed.content.includes('🤔 开始思考...')) {
+                                    $('#loadingIndicator p').text('OpenManus 正在思考... (初始化)');
+                                } else if (parsed.content.includes('✅ **最终回复:**')) {
+                                    $('#loadingIndicator p').text('OpenManus 正在思考... (生成回复)');
                                 }
-                                appendToStreamingMessage(messageId, parsed.content);
-                            }
+                                
+                                appendToStreamingMessage(assistantMessageId, parsed.content);
+                            } else if (parsed.type === 'error') {
+                                $('#loadingIndicator').hide();
+                                $('#sendBtn').prop('disabled', false);
+                                addMessage('system', '抱歉，发生了错误：' + parsed.message);
+                                return;
+                            } else if (parsed.type === 'done') {
+                                 $('#loadingIndicator').hide();
+                                 $('#sendBtn').prop('disabled', false);
+                                 finalizeStreamingMessage(assistantMessageId);
+                                 if (!isGuest && parsed.conversation_id) {
+                                     currentConversationId = parsed.conversation_id;
+                                     loadConversations();
+                                 }
+                                 return;
+                             }
                         } catch (e) {
-                            console.error('Error parsing JSON:', e);
+                            console.error('Error parsing SSE data:', e);
                         }
                     }
-                }
+                });
                 
                 return readStream();
             });

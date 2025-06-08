@@ -248,6 +248,17 @@ function sendMessage() {
                         try {
                             const parsed = JSON.parse(data);
                             if (parsed.type === 'content') {
+                                // 检测步骤信息并更新加载指示器
+                                const stepMatch = parsed.content.match(/📝 \*\*步骤 (\d+):\*\*/);
+                                if (stepMatch) {
+                                    const stepNumber = stepMatch[1];
+                                    $('#loadingIndicator p').text(`OpenManus 正在思考... (步骤 ${stepNumber})`);
+                                } else if (parsed.content.includes('🤔 开始思考...')) {
+                                    $('#loadingIndicator p').text('OpenManus 正在思考... (初始化)');
+                                } else if (parsed.content.includes('✅ **最终回复:**')) {
+                                    $('#loadingIndicator p').text('OpenManus 正在思考... (生成回复)');
+                                }
+                                
                                 appendToStreamingMessage(assistantMessageId, parsed.content);
                             } else if (parsed.type === 'error') {
                                 $('#loadingIndicator').hide();
