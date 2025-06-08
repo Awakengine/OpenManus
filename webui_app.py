@@ -1184,12 +1184,16 @@ class OpenManusWebUI:
             if not message:
                 return jsonify({"success": False, "data": None, "message": "消息不能为空", "code": 400})
 
+            # 在请求上下文中获取用户ID
+            user_id = session["user_id"]
+            user_session_id = session.get("user_id", "guest")
+
             def generate():
                 try:
                     # 如果没有提供conversation_id，创建新对话
                     if not conversation_id:
                         new_conversation_id = self.db.create_conversation(
-                            session["user_id"],
+                            user_id,
                             f"对话 {datetime.now().strftime('%Y-%m-%d %H:%M')}",
                         )
                     else:
@@ -1200,7 +1204,7 @@ class OpenManusWebUI:
 
                     # 调用OpenManus代理并流式输出
                     full_response = ""
-                    for chunk in self.process_with_agent_stream(message, new_conversation_id):
+                    for chunk in self.process_with_agent_stream(message, new_conversation_id, user_session_id):
                         if chunk:
                             full_response += chunk
                             yield f"data: {json.dumps({'type': 'content', 'content': chunk})}\n\n"
@@ -1229,7 +1233,7 @@ class OpenManusWebUI:
             def generate():
                 try:
                     # 调用OpenManus代理并流式输出
-                    for chunk in self.process_with_agent_stream(message, None):
+                    for chunk in self.process_with_agent_stream(message, None, "guest"):
                         if chunk:
                             yield f"data: {json.dumps({'type': 'content', 'content': chunk})}\n\n"
 
@@ -1792,11 +1796,14 @@ class OpenManusWebUI:
             logger.error(f"Agent processing error: {e}")
             return f"处理您的请求时遇到错误：{str(e)}"
 
-    def process_with_agent_stream(self, message: str, conversation_id: str = None):
+    def process_with_agent_stream(self, message: str, conversation_id: str = None, session_id: str = None):
         """Process user message with OpenManus agent and yield streaming response."""
         try:
+            # Use provided session_id or default to guest
+            if session_id is None:
+                session_id = "guest"
+            
             # Get or create agent instance for this session
-            session_id = session.get("user_id", "guest")
             if session_id not in self.agent_instances:
                 # Create agent synchronously for streaming
                 import asyncio

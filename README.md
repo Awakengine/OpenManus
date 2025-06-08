@@ -90,6 +90,7 @@ cp config/config.example.toml config/config.toml
 
 2. **编辑配置文件**，设置您的 LLM API 密钥：
 
+**Anthropic Claude 示例**：
 ```toml
 [llm]
 model = "claude-3-7-sonnet-20250219"
@@ -99,11 +100,26 @@ max_tokens = 8192
 temperature = 0.0
 ```
 
+**LM Studio 本地模型示例**：
+```toml
+[llm]
+api_type = 'openai'
+model = "your-model-name"              # LM Studio 中加载的模型名称
+base_url = "http://localhost:1234/v1"  # LM Studio API 端点
+api_key = "lm-studio"                  # 本地服务可以是任意字符串
+max_tokens = 4096
+temperature = 0.7
+```
+
+> 💡 **提示**: 更多配置示例请参考 `config/` 目录下的示例文件，包括 Azure OpenAI、Ollama 等配置。
+> 📖 **LM Studio 详细配置**: 请参考 [LM Studio 集成指南](docs/LM_STUDIO_INTEGRATION.md)
+
 支持的 LLM 提供商：
 - **Anthropic Claude**: claude-3-7-sonnet, claude-3-haiku 等
 - **OpenAI**: gpt-4o, gpt-4o-mini 等
 - **Azure OpenAI**: 企业级 OpenAI 服务
 - **Ollama**: 本地部署的开源模型
+- **LM Studio**: 本地运行的大语言模型，提供 OpenAI 兼容 API
 - **Amazon Bedrock**: AWS 托管的 AI 服务
 
 ### 🚀 命令行界面

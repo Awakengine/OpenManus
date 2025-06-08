@@ -289,7 +289,11 @@ $(document).ready(function() {
         
         // 检查登录状态
         if (!isGuest && !currentConversationId) {
-            checkLoginAndSend();
+            // 已登录但没有选择对话，自动创建新对话
+            const message = $('#messageInput').val().trim();
+            if (message) {
+                createNewConversationAndSend(message);
+            }
             return;
         }
         
@@ -629,6 +633,36 @@ function createNewConversation(title) {
     });
 }
 
+function createNewConversationAndSend(message) {
+    // 使用消息的前20个字符作为对话标题
+    const title = message.length > 20 ? message.substring(0, 20) + '...' : message;
+    
+    $.ajax({
+        url: '/api/conversations',
+        method: 'POST',
+        data: { title: title },
+        success: function(response) {
+            if (response.code === 200) {
+                currentConversationId = response.data.conversation_id;
+                $('#conversationTitle').text(title);
+                loadConversations();
+                
+                // 清空消息区域
+                $('#chatMessages').empty();
+                $('#welcomeMessage').hide();
+                
+                // 立即发送消息
+                sendMessage();
+            } else {
+                alert('创建对话失败：' + (response.message || '未知错误'));
+            }
+        },
+        error: function() {
+            alert('创建对话失败，请重试');
+        }
+    });
+}
+
 function enableChat() {
     $('#messageInput').prop('disabled', false);
     $('#sendBtn').prop('disabled', false);
@@ -652,7 +686,7 @@ function checkUserAuth() {
                     }
                 }
             }
-        }
+        },
         error: function() {
             console.log('用户未登录');
         }

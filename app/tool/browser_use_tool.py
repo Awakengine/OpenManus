@@ -427,11 +427,11 @@ Page content:
                         },
                     }
 
-                    # Use LLM to extract content with required function calling
+                    # Use LLM to extract content with function calling
                     response = await self.llm.ask_tool(
                         messages,
                         tools=[extraction_function],
-                        tool_choice="required",
+                        tool_choice="auto",
                     )
 
                     if response and response.tool_calls:

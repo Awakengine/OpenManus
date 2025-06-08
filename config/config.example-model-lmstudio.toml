@@ -1,0 +1,19 @@
+# LM Studio Configuration Example
+# LM Studio provides OpenAI-compatible API endpoints
+
+[llm] # LM Studio:
+api_type = 'openai'                                               # Use OpenAI-compatible API
+model = "your-model-name"                                         # The model name loaded in LM Studio
+base_url = "http://localhost:1234/v1"                            # Default LM Studio API endpoint
+api_key = "lm-studio"                                            # API key (can be any string for local LM Studio)
+max_tokens = 4096                                                # Maximum number of tokens in the response
+temperature = 0.7                                                # Controls randomness
+
+# Optional: Vision model configuration if your LM Studio model supports vision
+# [llm.vision] # LM Studio Vision:
+# api_type = 'openai'
+# model = "your-vision-model-name"                                # The vision model name in LM Studio
+# base_url = "http://localhost:1234/v1"                          # LM Studio API endpoint for vision
+# api_key = "lm-studio"                                          # API key for vision model
+# max_tokens = 4096                                              # Maximum tokens for vision responses
+# temperature = 0.7                                              # Controls randomness for vision model
