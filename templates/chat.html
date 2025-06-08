@@ -230,6 +230,81 @@
             transform: scale(1);
         }
     }
+    
+    /* 恢复对话提示框样式 */
+    .resume-conversation-alert {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        max-width: 350px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        animation: slideInRight 0.3s ease-out;
+    }
+    
+    .resume-conversation-alert .alert-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+    
+    .resume-conversation-alert .alert-message {
+        color: #666;
+        margin-bottom: 16px;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+    
+    .resume-conversation-alert .alert-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+    
+    .resume-conversation-alert .btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .resume-conversation-alert .btn-primary {
+        background: #007bff;
+        color: white;
+    }
+    
+    .resume-conversation-alert .btn-primary:hover {
+        background: #0056b3;
+    }
+    
+    .resume-conversation-alert .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .resume-conversation-alert .btn-secondary:hover {
+        background: #545b62;
+    }
+    
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
 </style>
 {% endblock %}
 
@@ -866,6 +941,201 @@ function showConfirm(message, title = '确认操作', onConfirm = null, onCancel
     });
 }
 
+// 对话状态管理
+let activeStreamingState = null;
+
+// 保存对话状态到 localStorage
+function saveConversationState(state) {
+    try {
+        localStorage.setItem('activeConversationState', JSON.stringify(state));
+    } catch (e) {
+        console.error('Failed to save conversation state:', e);
+    }
+}
+
+// 从 localStorage 恢复对话状态
+function restoreConversationState() {
+    try {
+        const savedState = localStorage.getItem('activeConversationState');
+        if (savedState) {
+            return JSON.parse(savedState);
+        }
+    } catch (e) {
+        console.error('Failed to restore conversation state:', e);
+    }
+    return null;
+}
+
+// 清除保存的对话状态
+function clearConversationState() {
+    try {
+        localStorage.removeItem('activeConversationState');
+    } catch (e) {
+        console.error('Failed to clear conversation state:', e);
+    }
+}
+
+// 检查并恢复正在进行的对话
+function checkAndRestoreActiveConversation() {
+    const savedState = restoreConversationState();
+    if (savedState && savedState.isActive) {
+        const timeDiff = Date.now() - savedState.timestamp;
+        // 如果状态保存时间超过5分钟，认为对话已过期
+        if (timeDiff > 5 * 60 * 1000) {
+            clearConversationState();
+            return;
+        }
+        
+        // 恢复对话状态
+        if (savedState.conversationId) {
+            currentConversationId = savedState.conversationId;
+            // 重新加载对话消息
+            loadMessages(savedState.conversationId);
+        }
+        
+        // 显示恢复提示和选项
+        const resumeHtml = `
+            <div class="resume-conversation-alert">
+                <div class="alert-content">
+                    <i class="fas fa-info-circle"></i>
+                    <span>检测到未完成的对话，是否要恢复？</span>
+                    <div class="alert-buttons">
+                        <button class="btn btn-sm btn-primary" onclick="resumeConversationManually()">恢复对话</button>
+                        <button class="btn btn-sm btn-secondary" onclick="dismissResumeAlert()">忽略</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 添加到页面顶部
+        $('body').prepend(resumeHtml);
+        
+        // 保存状态供手动恢复使用
+        window.pendingResumeState = savedState;
+        
+        // 不自动恢复，等待用户选择
+         return;
+    }
+}
+
+// 恢复流式对话
+function resumeStreamingConversation(savedState) {
+    // 显示加载指示器
+    $('#loadingIndicator').show();
+    
+    // 创建新的助手消息容器
+    const assistantMessageId = 'msg-' + Date.now();
+    addStreamingMessage('assistant', '', assistantMessageId);
+    
+    // 更新状态
+    activeStreamingState = {
+        messageId: assistantMessageId,
+        conversationId: savedState.conversationId,
+        userMessage: savedState.userMessage,
+        isActive: true,
+        timestamp: Date.now()
+    };
+    saveConversationState(activeStreamingState);
+    
+    // 重新发送消息以恢复对话
+    const endpoint = isGuest ? '/api/chat-guest-stream' : '/api/chat-stream';
+    const data = isGuest ? { message: savedState.userMessage } : { 
+        message: savedState.userMessage, 
+        conversation_id: savedState.conversationId 
+    };
+    
+    // 使用fetch API支持流式响应
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        
+        function readStream() {
+            return reader.read().then(({ done, value }) => {
+                if (done) {
+                    $('#loadingIndicator').hide();
+                    activeStreamingState = null;
+                    clearConversationState();
+                    return;
+                }
+                
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                
+                lines.forEach(line => {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') {
+                            $('#loadingIndicator').hide();
+                            activeStreamingState = null;
+                            clearConversationState();
+                            return;
+                        }
+                        
+                        try {
+                            const parsed = JSON.parse(data);
+                            if (parsed.type === 'content') {
+                                const stepMatch = parsed.content.match(/📝 \*\*步骤 (\d+):\*\*/);
+                                if (stepMatch) {
+                                    const stepNumber = stepMatch[1];
+                                    $('#loadingIndicator p').text(`OpenManus 正在思考... (步骤 ${stepNumber})`);
+                                } else if (parsed.content.includes('🤔 开始思考...')) {
+                                    $('#loadingIndicator p').text('OpenManus 正在思考... (初始化)');
+                                } else if (parsed.content.includes('✅ **最终回复:**')) {
+                                    $('#loadingIndicator p').text('OpenManus 正在思考... (生成回复)');
+                                }
+                                
+                                appendToStreamingMessage(assistantMessageId, parsed.content);
+                            } else if (parsed.type === 'error') {
+                                $('#loadingIndicator').hide();
+                                addMessage('system', '抱歉，发生了错误：' + parsed.message);
+                                activeStreamingState = null;
+                                clearConversationState();
+                                return;
+                            } else if (parsed.type === 'done') {
+                                $('#loadingIndicator').hide();
+                                finalizeStreamingMessage(assistantMessageId);
+                                if (!isGuest && parsed.conversation_id) {
+                                    currentConversationId = parsed.conversation_id;
+                                    loadConversations();
+                                }
+                                activeStreamingState = null;
+                                clearConversationState();
+                                return;
+                            }
+                        } catch (e) {
+                            console.error('Error parsing SSE data:', e);
+                        }
+                    }
+                });
+                
+                return readStream();
+            });
+        }
+        
+        return readStream();
+    })
+    .catch(error => {
+        $('#loadingIndicator').hide();
+        console.error('Resume conversation error:', error);
+        addMessage('system', '恢复对话失败，请重新发送消息');
+        activeStreamingState = null;
+        clearConversationState();
+    });
+}
+
 $(document).ready(function() {
     // 检查是否为游客模式
     const urlParams = new URLSearchParams(window.location.search);
@@ -880,6 +1150,34 @@ $(document).ready(function() {
         loadConversations();
         checkUserAuth();
     }
+    
+    // 检查并恢复正在进行的对话
+    checkAndRestoreActiveConversation();
+    
+    // 页面卸载时保存状态
+    window.addEventListener('beforeunload', function(e) {
+        if (activeStreamingState && activeStreamingState.isActive) {
+            // 更新时间戳
+            activeStreamingState.timestamp = Date.now();
+            saveConversationState(activeStreamingState);
+        }
+    });
+    
+    // 页面可见性变化处理
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            // 页面隐藏时保存状态
+            if (activeStreamingState && activeStreamingState.isActive) {
+                activeStreamingState.timestamp = Date.now();
+                saveConversationState(activeStreamingState);
+            }
+        } else {
+            // 页面重新可见时检查是否需要恢复
+            if (!activeStreamingState) {
+                checkAndRestoreActiveConversation();
+            }
+        }
+    });
     
     // 聊天表单提交
     $('#chatForm').submit(function(e) {
@@ -989,6 +1287,16 @@ function sendMessage() {
     const assistantMessageId = 'msg-' + Date.now();
     addStreamingMessage('assistant', '', assistantMessageId);
     
+    // 保存对话状态
+    activeStreamingState = {
+        messageId: assistantMessageId,
+        conversationId: currentConversationId,
+        userMessage: message,
+        isActive: true,
+        timestamp: Date.now()
+    };
+    saveConversationState(activeStreamingState);
+    
     // 发送消息到后端并接收流式响应
     const endpoint = isGuest ? '/api/chat-guest-stream' : '/api/chat-stream';
     const data = isGuest ? { message: message } : { 
@@ -1017,6 +1325,8 @@ function sendMessage() {
             return reader.read().then(({ done, value }) => {
                 if (done) {
                     $('#loadingIndicator').hide();
+                    activeStreamingState = null;
+                    clearConversationState();
                     return;
                 }
                 
@@ -1029,6 +1339,8 @@ function sendMessage() {
                         const data = line.slice(6);
                         if (data === '[DONE]') {
                             $('#loadingIndicator').hide();
+                            activeStreamingState = null;
+                            clearConversationState();
                             return;
                         }
                         
@@ -1050,6 +1362,8 @@ function sendMessage() {
                             } else if (parsed.type === 'error') {
                                 $('#loadingIndicator').hide();
                                 addMessage('system', '抱歉，发生了错误：' + parsed.message);
+                                activeStreamingState = null;
+                                clearConversationState();
                                 return;
                             } else if (parsed.type === 'done') {
                                  $('#loadingIndicator').hide();
@@ -1058,6 +1372,8 @@ function sendMessage() {
                                      currentConversationId = parsed.conversation_id;
                                      loadConversations();
                                  }
+                                 activeStreamingState = null;
+                                 clearConversationState();
                                  return;
                              }
                         } catch (e) {
@@ -1076,6 +1392,8 @@ function sendMessage() {
         $('#loadingIndicator').hide();
         console.error('Fetch error:', error);
         addMessage('system', '网络错误，请重试');
+        activeStreamingState = null;
+        clearConversationState();
     });
 }
 
@@ -1657,6 +1975,16 @@ function sendMessageWithContent(content) {
     const assistantMessageId = 'msg-' + Date.now();
     addStreamingMessage('assistant', '', assistantMessageId);
     
+    // 保存对话状态
+    activeStreamingState = {
+        messageId: assistantMessageId,
+        conversationId: currentConversationId,
+        userMessage: content,
+        isActive: true,
+        timestamp: Date.now()
+    };
+    saveConversationState(activeStreamingState);
+    
     // 发送消息到后端并接收流式响应
     const endpoint = isGuest ? '/api/chat-guest-stream' : '/api/chat-stream';
     const data = isGuest ? { message: content } : { 
@@ -1686,6 +2014,8 @@ function sendMessageWithContent(content) {
                 if (done) {
                     $('#loadingIndicator').hide();
                     $('#sendBtn').prop('disabled', false);
+                    activeStreamingState = null;
+                    clearConversationState();
                     return;
                 }
                 
@@ -1699,6 +2029,8 @@ function sendMessageWithContent(content) {
                         if (data === '[DONE]') {
                             $('#loadingIndicator').hide();
                             $('#sendBtn').prop('disabled', false);
+                            activeStreamingState = null;
+                            clearConversationState();
                             return;
                         }
                         
@@ -1721,6 +2053,8 @@ function sendMessageWithContent(content) {
                                 $('#loadingIndicator').hide();
                                 $('#sendBtn').prop('disabled', false);
                                 addMessage('system', '抱歉，发生了错误：' + parsed.message);
+                                activeStreamingState = null;
+                                clearConversationState();
                                 return;
                             } else if (parsed.type === 'done') {
                                  $('#loadingIndicator').hide();
@@ -1730,6 +2064,8 @@ function sendMessageWithContent(content) {
                                      currentConversationId = parsed.conversation_id;
                                      loadConversations();
                                  }
+                                 activeStreamingState = null;
+                                 clearConversationState();
                                  return;
                              }
                         } catch (e) {
@@ -1748,8 +2084,34 @@ function sendMessageWithContent(content) {
         $('#loadingIndicator').hide();
         $('#sendBtn').prop('disabled', false);
         console.error('Fetch error:', error);
+        activeStreamingState = null;
+        clearConversationState();
         addMessage('system', '网络错误，请重试');
     });
+}
+
+// 手动恢复对话
+function resumeConversationManually() {
+    const savedState = window.pendingResumeState;
+    if (savedState) {
+        // 移除提示框
+        $('.resume-conversation-alert').remove();
+        
+        // 恢复对话
+        if (savedState.messageId && savedState.userMessage) {
+            resumeStreamingConversation(savedState);
+        }
+        
+        // 清除临时状态
+        window.pendingResumeState = null;
+    }
+}
+
+// 忽略恢复提示
+function dismissResumeAlert() {
+    $('.resume-conversation-alert').remove();
+    clearConversationState();
+    window.pendingResumeState = null;
 }
 
 </script>
