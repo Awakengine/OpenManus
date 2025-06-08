@@ -717,23 +717,50 @@ class DatabaseManager:
                 for role in roles
             ]
     
-    def get_roles_paginated(self, page: int = 1, page_size: int = 10) -> Dict:
-        """分页获取角色列表。"""
+    def get_roles_paginated(self, page: int = 1, page_size: int = 10, search: str = '', status: str = '', role_name: str = '', display_name: str = '', description: str = '') -> Dict:
+        """分页获取角色列表，支持按字段分别搜索和状态筛选。"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             
+            # 构建WHERE条件
+            where_conditions = []
+            params = []
+            
+            # 支持旧的合并搜索方式（向后兼容）
+            if search:
+                where_conditions.append("(role_name LIKE ? OR role_display_name LIKE ? OR description LIKE ?)")
+                search_param = f"%{search}%"
+                params.extend([search_param, search_param, search_param])
+            
+            # 支持按字段分别搜索
+            if role_name:
+                where_conditions.append("role_name LIKE ?")
+                params.append(f"%{role_name}%")
+            
+            if display_name:
+                where_conditions.append("role_display_name LIKE ?")
+                params.append(f"%{display_name}%")
+            
+            if description:
+                where_conditions.append("description LIKE ?")
+                params.append(f"%{description}%")
+            
+            # 注意：由于roles表没有status字段，这里暂时忽略status筛选
+            # 如果需要状态筛选，需要先在数据库中添加status字段
+            
+            where_clause = " WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+            
             # 获取总数
-            cursor.execute("SELECT COUNT(*) FROM roles")
+            count_query = f"SELECT COUNT(*) FROM roles{where_clause}"
+            cursor.execute(count_query, params)
             total = cursor.fetchone()[0]
             
             # 计算偏移量
             offset = (page - 1) * page_size
             
             # 获取分页数据
-            cursor.execute(
-                "SELECT id, role_name, role_display_name, description, permissions, created_at, updated_at FROM roles ORDER BY id LIMIT ? OFFSET ?",
-                (page_size, offset)
-            )
+            data_query = f"SELECT id, role_name, role_display_name, description, permissions, created_at, updated_at FROM roles{where_clause} ORDER BY id LIMIT ? OFFSET ?"
+            cursor.execute(data_query, params + [page_size, offset])
             roles = cursor.fetchall()
             
             roles_list = [
@@ -1476,6 +1503,13 @@ class OpenManusWebUI:
             page = request.args.get('page', 1, type=int)
             page_size = request.args.get('page_size', 10, type=int)
             
+            # 获取搜索和筛选参数
+            search = request.args.get('search', '').strip()
+            status = request.args.get('status', '').strip()
+            role_name = request.args.get('role_name', '').strip()
+            display_name = request.args.get('display_name', '').strip()
+            description = request.args.get('description', '').strip()
+            
             # 限制页面大小
             if page_size > 100:
                 page_size = 100
@@ -1485,7 +1519,7 @@ class OpenManusWebUI:
                 page = 1
 
             # 获取分页数据
-            result = self.db.get_roles_paginated(page, page_size)
+            result = self.db.get_roles_paginated(page, page_size, search, status, role_name, display_name, description)
             return jsonify({"data": result, "message": "获取角色列表成功", "code": 200})
 
         @self.app.route("/admin/roles", methods=["POST"])
