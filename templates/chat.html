@@ -1090,8 +1090,25 @@ function addMessage(type, content) {
     const icon = $('<i>').addClass(`fas ${type === 'user' ? 'fa-user' : type === 'assistant' ? 'fa-robot' : 'fa-info-circle'}`);
     const sender = $('<span>').addClass('message-sender').text(type === 'user' ? '您' : type === 'assistant' ? 'OpenManus' : '系统');
     const time = $('<span>').addClass('message-time').text(new Date().toLocaleTimeString());
-    const processedContent = processThinkingTags(content);
-    const messageText = $('<div>').addClass('message-text').html(processedContent);
+    
+    // 安全处理内容，避免HTML解析错误
+    let processedContent;
+    try {
+        processedContent = processThinkingTags(content || '');
+    } catch (error) {
+        console.error('Error processing content:', error);
+        processedContent = (content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+    }
+    
+    const messageText = $('<div>').addClass('message-text');
+    
+    // 安全设置HTML内容
+    try {
+        messageText.html(processedContent);
+    } catch (error) {
+        console.error('Error setting HTML content:', error);
+        messageText.text(content || '');
+    }
     
     // 为用户消息添加编辑按钮
     if (type === 'user') {
@@ -1157,48 +1174,63 @@ function finalizeStreamingMessage(messageId) {
 }
 
 function processThinkingTags(content) {
+    // 确保内容是字符串
+    if (typeof content !== 'string') {
+        return '';
+    }
+    
     // 处理多个相连的Thinking标签，将它们合并
     let processedContent = content;
     
-    // 匹配所有Thinking标签并处理
-    const thinkingRegex = /<Thinking>([\s\S]*?)<\/Thinking>/g;
-    let thinkingBlocks = [];
-    let match;
-    
-    while ((match = thinkingRegex.exec(content)) !== null) {
-        thinkingBlocks.push(match[1].trim());
-    }
-    
-    if (thinkingBlocks.length > 0) {
-        // 合并所有thinking内容
-        const combinedThinking = thinkingBlocks.join('\n\n');
+    try {
+        // 匹配所有Thinking标签并处理
+        const thinkingRegex = /<Thinking>([\s\S]*?)<\/Thinking>/g;
+        let thinkingBlocks = [];
+        let match;
         
-        // 创建可折叠的HTML结构
-        const thinkingHtml = `
-            <div class="thinking-container">
-                <div class="thinking-header" onclick="toggleThinking(this)">
-                    <i class="fas fa-brain thinking-icon"></i>
-                    <span class="thinking-title">思考过程</span>
-                    <i class="fas fa-chevron-down thinking-toggle"></i>
-                </div>
-                <div class="thinking-content" style="display: none;">
-                    ${combinedThinking.replace(/\n/g, '<br>')}
-                </div>
-            </div>
-        `;
-        
-        // 移除原始的Thinking标签并替换为HTML结构
-        processedContent = content.replace(thinkingRegex, '').trim();
-        
-        // 如果还有其他内容，在thinking后面添加
-        if (processedContent) {
-            processedContent = thinkingHtml + '<br><br>' + processedContent.replace(/\n/g, '<br>');
-        } else {
-            processedContent = thinkingHtml;
+        while ((match = thinkingRegex.exec(content)) !== null) {
+            thinkingBlocks.push(match[1].trim());
         }
-    } else {
-        // 没有thinking标签，正常处理换行
-        processedContent = content.replace(/\n/g, '<br>');
+        
+        if (thinkingBlocks.length > 0) {
+            // 合并所有thinking内容
+            const combinedThinking = thinkingBlocks.join('\n\n');
+            
+            // 安全转义thinking内容
+            const escapedThinking = combinedThinking.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+            
+            // 创建可折叠的HTML结构
+            const thinkingHtml = `
+                <div class="thinking-container">
+                    <div class="thinking-header" onclick="toggleThinking(this)">
+                        <i class="fas fa-brain thinking-icon"></i>
+                        <span class="thinking-title">思考过程</span>
+                        <i class="fas fa-chevron-down thinking-toggle"></i>
+                    </div>
+                    <div class="thinking-content" style="display: none;">
+                        ${escapedThinking}
+                    </div>
+                </div>
+            `;
+            
+            // 移除原始的Thinking标签并替换为HTML结构
+            processedContent = content.replace(thinkingRegex, '').trim();
+            
+            // 安全转义剩余内容
+            if (processedContent) {
+                const escapedContent = processedContent.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+                processedContent = thinkingHtml + '<br><br>' + escapedContent;
+            } else {
+                processedContent = thinkingHtml;
+            }
+        } else {
+            // 没有thinking标签，安全处理换行和HTML字符
+            processedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+        }
+    } catch (error) {
+        console.error('Error in processThinkingTags:', error);
+        // 发生错误时，安全转义所有内容
+        processedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
     }
     
     return processedContent;
