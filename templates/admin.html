@@ -393,7 +393,7 @@
         // 检查用户认证状态
         async function checkAuth() {
             try {
-                const response = await fetch('/api/user');
+                const response = await fetch('/api/check-auth');
                 const data = await response.json();
                 
                 if (data.error) {

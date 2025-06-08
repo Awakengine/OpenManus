@@ -17,6 +17,35 @@ English | [中文](README_zh.md) | [한국어](README_ko.md) | [日本語](READM
 
 Manus is incredible, but OpenManus can achieve any idea without an *Invite Code* 🛫!
 
+**OpenManus** is a versatile, open-source AI agent framework that empowers users to build and deploy intelligent agents capable of handling complex tasks across multiple domains. With support for various LLM providers, browser automation, code execution, and an intuitive web interface, OpenManus makes AI agent development accessible to everyone.
+
+## ✨ Key Features
+
+### 🤖 **Multi-Modal AI Agent**
+- **Versatile Task Handling**: Code execution, web browsing, file operations, and more
+- **Multiple LLM Support**: OpenAI, Anthropic, Azure OpenAI, Ollama, and AWS Bedrock
+- **Browser Automation**: Powered by Playwright for web interaction tasks
+- **MCP Integration**: Model Context Protocol support for extensible tool ecosystem
+
+### 🌐 **Modern Web Interface**
+- **Intuitive Chat UI**: Clean, responsive design for seamless interaction
+- **User Management**: Secure authentication and session management
+- **Conversation History**: Persistent chat history with search capabilities
+- **Real-time Responses**: Live streaming of agent responses
+
+### 🛠️ **Developer-Friendly**
+- **Modular Architecture**: Easy to extend with custom tools and agents
+- **Configuration-Driven**: Simple TOML-based configuration
+- **Multiple Deployment Options**: CLI, Web UI, and programmatic API
+- **Comprehensive Logging**: Detailed logging for debugging and monitoring
+
+### 🔧 **Built-in Tools**
+- **Python Code Execution**: Safe code execution in sandboxed environments
+- **File Operations**: Read, write, and manipulate files with advanced editing capabilities
+- **Web Search**: Multi-engine search with fallback support (Google, DuckDuckGo, Baidu, Bing)
+- **Browser Automation**: Automated web browsing and interaction
+- **Human Interaction**: Ask for human input when needed
+
 Our team members [@Xinbin Liang](https://github.com/mannaandpoem) and [@Jinyu Xiang](https://github.com/XiangJinyu) (core authors), along with [@Zhaoyang Yu](https://github.com/MoshiQAQ), [@Jiayi Zhang](https://github.com/didiforgithub), and [@Sirui Hong](https://github.com/stellaHSR), we are from [@MetaGPT](https://github.com/geekan/MetaGPT). The prototype is launched within 3 hours and we are keeping building!
 
 It's a simple implementation, so we welcome any suggestions, contributions, and feedback!
@@ -120,23 +149,63 @@ api_key = "sk-..."  # Replace with your actual API key
 
 ## Quick Start
 
-One line for run OpenManus:
+### 🚀 Command Line Interface
+
+Run OpenManus directly from the command line:
 
 ```bash
 python main.py
 ```
 
-Then input your idea via terminal!
+Then input your idea via terminal and watch OpenManus work its magic!
 
-For MCP tool version, you can run:
+### 🌐 Web User Interface
+
+For a more user-friendly experience, launch the web interface:
+
+```bash
+python run_webui.py
+```
+
+Then open your browser and navigate to `http://localhost:5000` to access the modern web interface with:
+- User authentication and registration
+- Persistent conversation history
+- Real-time chat interface
+- File upload and management
+- Settings configuration
+
+### 🔧 Advanced Usage
+
+**MCP (Model Context Protocol) Version:**
 ```bash
 python run_mcp.py
 ```
 
-For unstable multi-agent version, you also can run:
-
+**Multi-Agent Flow (Experimental):**
 ```bash
 python run_flow.py
+```
+
+## 📖 Usage Examples
+
+### Code Development
+```
+"Create a Python web scraper that extracts product information from an e-commerce website"
+```
+
+### Data Analysis
+```
+"Analyze this CSV file and create visualizations showing sales trends over time"
+```
+
+### Web Automation
+```
+"Navigate to GitHub, search for Python machine learning repositories, and summarize the top 5 results"
+```
+
+### File Operations
+```
+"Organize my downloads folder by file type and create a summary report"
 ```
 
 ## How to contribute

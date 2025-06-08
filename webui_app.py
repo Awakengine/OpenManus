@@ -679,18 +679,22 @@ class OpenManusWebUI:
                 return jsonify({"error": "未认证"}), 401
 
             conversations = self.db.get_user_conversations(session["user_id"])
-            return jsonify(conversations)
+            return jsonify({"success": True, "conversations": conversations})
 
         @self.app.route("/api/conversations", methods=["POST"])
         def create_conversation():
             if "user_id" not in session:
                 return jsonify({"error": "未认证"}), 401
 
-            data = request.get_json()
-            title = data.get("title", "New Conversation")
+            # 支持both JSON and form data
+            if request.is_json:
+                data = request.get_json()
+                title = data.get("title", "New Conversation")
+            else:
+                title = request.form.get("title", "New Conversation")
 
             conversation_id = self.db.create_conversation(session["user_id"], title)
-            return jsonify({"id": conversation_id, "title": title})
+            return jsonify({"success": True, "conversation_id": conversation_id, "title": title})
 
         @self.app.route("/api/conversations/<conversation_id>/messages")
         def get_messages(conversation_id):
@@ -787,7 +791,7 @@ class OpenManusWebUI:
                 return jsonify({"error": "权限不足"}), 403
 
             users = self.db.get_all_users()
-            return jsonify(users)
+            return jsonify({"users": users})
 
         @self.app.route("/admin/users/<int:user_id>/role", methods=["PUT"])
         def admin_update_user_role(user_id):
@@ -944,26 +948,14 @@ class OpenManusWebUI:
             try:
                 import os
                 config_dir = os.path.join(os.path.dirname(__file__), "config")
-                configs = {}
+                files = []
                 
                 if os.path.exists(config_dir):
                     for filename in os.listdir(config_dir):
                         if filename.endswith(('.toml', '.json')):
-                            config_file = os.path.join(config_dir, filename)
-                            try:
-                                with open(config_file, 'r', encoding='utf-8') as f:
-                                    content = f.read()
-                                configs[filename] = {
-                                    'content': content,
-                                    'type': 'toml' if filename.endswith('.toml') else 'json'
-                                }
-                            except Exception as e:
-                                configs[filename] = {
-                                    'error': f'读取失败: {str(e)}',
-                                    'type': 'toml' if filename.endswith('.toml') else 'json'
-                                }
+                            files.append(filename)
                 
-                return jsonify(configs)
+                return jsonify({"files": sorted(files)})
             except Exception as e:
                 return jsonify({"error": f"获取配置文件列表失败: {str(e)}"}), 500
 

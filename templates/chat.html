@@ -100,18 +100,21 @@
             <!-- Chat Input -->
             <div class="chat-input">
                 <form id="chatForm">
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="messageInput" 
-                               placeholder="在此输入您的消息...">
-                        <button class="btn btn-primary" type="submit" id="sendBtn">
-                            <i class="fas fa-paper-plane"></i>
+                    <div class="position-relative">
+                        <textarea class="form-control" id="messageInput" 
+                                  placeholder="在此输入您的消息..." 
+                                  rows="4" 
+                                  style="resize: none; padding-right: 60px; min-height: 100px; border: 2px solid #007bff; border-radius: 8px; background-color: #f8f9fa; box-shadow: 0 2px 4px rgba(0,123,255,0.1);"></textarea>
+                        <button class="btn btn-primary btn-sm position-absolute" type="submit" id="sendBtn" 
+                                style="bottom: 8px; right: 8px; z-index: 10; border-radius: 8px; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-paper-plane" style="font-size: 14px;"></i>
                         </button>
                     </div>
                 </form>
                 <div class="text-center mt-2">
                     <small class="text-muted">
                         <i class="fas fa-info-circle me-1"></i>
-                        OpenManus 可能会出错。请验证重要信息。
+                        OpenManus 可能会出错。请验证重要信息。按 Shift+Enter 换行，Enter 发送。
                     </small>
                 </div>
             </div>
@@ -232,6 +235,19 @@
 {% endblock %}
 
 {% block extra_js %}
+<style>
+#messageInput:focus {
+    border-color: #0056b3 !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25), 0 4px 8px rgba(0,123,255,0.2) !important;
+    background-color: #ffffff !important;
+}
+
+#messageInput:hover {
+    border-color: #0056b3 !important;
+    box-shadow: 0 2px 6px rgba(0,123,255,0.15) !important;
+}
+</style>
+
 <script>
 let currentConversationId = null;
 let conversations = [];
@@ -263,6 +279,32 @@ $(document).ready(function() {
         }
         
         sendMessage();
+    });
+    
+    // 消息输入框键盘事件处理
+    $('#messageInput').on('keydown', function(e) {
+        // Enter键发送消息（不按Shift）
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            $('#chatForm').submit();
+        }
+    });
+    
+    // 自动调整textarea高度
+    $('#messageInput').on('input', function() {
+        const minHeight = 100; // 4行的高度
+        const maxHeight = 200; // 8行的高度
+        
+        this.style.height = 'auto';
+        const newHeight = Math.max(minHeight, Math.min(this.scrollHeight, maxHeight));
+        this.style.height = newHeight + 'px';
+        
+        // 如果内容超过最大高度，显示滚动条
+        if (this.scrollHeight > maxHeight) {
+            this.style.overflowY = 'auto';
+        } else {
+            this.style.overflowY = 'hidden';
+        }
     });
     
     // 新建对话

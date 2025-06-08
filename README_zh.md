@@ -17,8 +17,36 @@
 
 Manus 非常棒，但 OpenManus 无需邀请码即可实现任何创意 🛫！
 
-我们的团队成员 [@Xinbin Liang](https://github.com/mannaandpoem) 和 [@Jinyu Xiang](https://github.com/XiangJinyu)（核心作者），以及 [@Zhaoyang Yu](https://github.com/MoshiQAQ)、[@Jiayi Zhang](https://github.com/didiforgithub) 和 [@Sirui Hong](https://github.com/stellaHSR)，来自 [@MetaGPT](https://github.com/geekan/MetaGPT)团队。我们在 3
-小时内完成了开发并持续迭代中！
+**OpenManus** 是一个多功能的开源 AI 智能体框架，让用户能够构建和部署能够处理跨多个领域复杂任务的智能代理。支持多种 LLM 提供商、浏览器自动化、代码执行和直观的 Web 界面，OpenManus 让 AI 智能体开发变得人人可及。
+
+## ✨ 核心特性
+
+### 🤖 **多模态 AI 智能体**
+- **多样化任务处理**：代码执行、网页浏览、文件操作等
+- **多 LLM 支持**：OpenAI、Anthropic、Azure OpenAI、Ollama 和 AWS Bedrock
+- **浏览器自动化**：基于 Playwright 的网页交互任务
+- **MCP 集成**：模型上下文协议支持，可扩展工具生态系统
+
+### 🌐 **现代化 Web 界面**
+- **直观聊天界面**：简洁、响应式设计，无缝交互体验
+- **用户管理**：安全的身份验证和会话管理
+- **对话历史**：持久化聊天记录，支持搜索功能
+- **实时响应**：智能体响应的实时流式传输
+
+### 🛠️ **开发者友好**
+- **模块化架构**：易于扩展自定义工具和智能体
+- **配置驱动**：基于 TOML 的简单配置
+- **多种部署选项**：命令行、Web UI 和编程 API
+- **全面日志记录**：详细的调试和监控日志
+
+### 🔧 **内置工具**
+- **Python 代码执行**：沙箱环境中的安全代码执行
+- **文件操作**：高级编辑功能的文件读写和操作
+- **网络搜索**：多引擎搜索，支持备用方案（Google、DuckDuckGo、百度、必应）
+- **浏览器自动化**：自动化网页浏览和交互
+- **人机交互**：需要时请求人工输入
+
+我们的团队成员 [@Xinbin Liang](https://github.com/mannaandpoem) 和 [@Jinyu Xiang](https://github.com/XiangJinyu)（核心作者），以及 [@Zhaoyang Yu](https://github.com/MoshiQAQ)、[@Jiayi Zhang](https://github.com/didiforgithub) 和 [@Sirui Hong](https://github.com/stellaHSR)，来自 [@MetaGPT](https://github.com/geekan/MetaGPT)团队。我们在 3 小时内完成了开发并持续迭代中！
 
 这是一个简洁的实现方案，欢迎任何建议、贡献和反馈！
 
@@ -121,23 +149,63 @@ api_key = "sk-..."  # 替换为真实 API 密钥
 
 ## 快速启动
 
-一行命令运行 OpenManus：
+### 🚀 命令行界面
+
+直接从命令行运行 OpenManus：
 
 ```bash
 python main.py
 ```
 
-然后通过终端输入你的创意！
+然后通过终端输入你的创意，观看 OpenManus 发挥魔力！
 
-如需使用 MCP 工具版本，可运行：
+### 🌐 Web 用户界面
+
+为了获得更友好的用户体验，启动 Web 界面：
+
+```bash
+python run_webui.py
+```
+
+然后打开浏览器访问 `http://localhost:5000` 来使用现代化的 Web 界面，包含：
+- 用户身份验证和注册
+- 持久化对话历史
+- 实时聊天界面
+- 文件上传和管理
+- 设置配置
+
+### 🔧 高级用法
+
+**MCP（模型上下文协议）版本：**
 ```bash
 python run_mcp.py
 ```
 
-如需体验不稳定的多智能体版本，可运行：
-
+**多智能体流程（实验性）：**
 ```bash
 python run_flow.py
+```
+
+## 📖 使用示例
+
+### 代码开发
+```
+"创建一个 Python 网络爬虫，从电商网站提取产品信息"
+```
+
+### 数据分析
+```
+"分析这个 CSV 文件并创建显示销售趋势的可视化图表"
+```
+
+### 网页自动化
+```
+"导航到 GitHub，搜索 Python 机器学习仓库，并总结前 5 个结果"
+```
+
+### 文件操作
+```
+"按文件类型整理我的下载文件夹并创建摘要报告"
 ```
 
 ## 贡献指南
