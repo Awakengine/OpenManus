@@ -198,6 +198,45 @@ class DatabaseManager:
             """
             )
 
+            # 角色表
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS roles (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    role_name TEXT UNIQUE NOT NULL,
+                    role_display_name TEXT NOT NULL,
+                    description TEXT,
+                    permissions TEXT,
+                    is_active BOOLEAN DEFAULT 1,
+                    created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+                    updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+                    created_by INTEGER,
+                    updated_by INTEGER,
+                    FOREIGN KEY (created_by) REFERENCES users(id),
+                    FOREIGN KEY (updated_by) REFERENCES users(id)
+                )
+            """
+            )
+
+            # 初始化默认角色数据
+            default_roles = [
+                ('user', '普通用户', '基本聊天功能', '["chat", "view_history", "edit_profile"]'),
+                ('admin', '管理员', '基础管理权限', '["chat", "view_history", "edit_profile", "view_users", "view_stats"]'),
+                ('user_admin', '用户管理员', '用户管理权限', '["chat", "view_history", "edit_profile", "view_users", "view_stats", "create_user", "delete_user", "manage_user_status"]'),
+                ('role_admin', '角色管理员', '角色管理权限', '["chat", "view_history", "edit_profile", "view_users", "view_stats", "view_roles", "edit_user_role"]'),
+                ('super_admin', '超级管理员', '完全管理权限', '["all"]')
+            ]
+            
+            for role_name, display_name, description, permissions in default_roles:
+                cursor.execute(
+                    "SELECT id FROM roles WHERE role_name = ?", (role_name,)
+                )
+                if not cursor.fetchone():
+                    cursor.execute(
+                        "INSERT INTO roles (role_name, role_display_name, description, permissions) VALUES (?, ?, ?, ?)",
+                        (role_name, display_name, description, permissions)
+                    )
+
             conn.commit()
 
     def create_user(self, username: str, email: str, password: str) -> bool:
@@ -655,6 +694,125 @@ class DatabaseManager:
                 "conversations": {"total": total_conversations},
                 "messages": {"total": total_messages},
             }
+
+    # 角色管理相关方法
+    def get_all_roles(self) -> List[Dict]:
+        """获取所有角色。"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, role_name, role_display_name, description, permissions, created_at, updated_at FROM roles ORDER BY id"
+            )
+            roles = cursor.fetchall()
+            return [
+                {
+                    "id": role[0],
+                    "name": role[1],
+                    "display_name": role[2],
+                    "description": role[3],
+                    "permissions": role[4].split(',') if role[4] else [],
+                    "created_at": role[5],
+                    "updated_at": role[6],
+                }
+                for role in roles
+            ]
+    
+    def get_roles_paginated(self, page: int = 1, page_size: int = 10) -> Dict:
+        """分页获取角色列表。"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # 获取总数
+            cursor.execute("SELECT COUNT(*) FROM roles")
+            total = cursor.fetchone()[0]
+            
+            # 计算偏移量
+            offset = (page - 1) * page_size
+            
+            # 获取分页数据
+            cursor.execute(
+                "SELECT id, role_name, role_display_name, description, permissions, created_at, updated_at FROM roles ORDER BY id LIMIT ? OFFSET ?",
+                (page_size, offset)
+            )
+            roles = cursor.fetchall()
+            
+            roles_list = [
+                {
+                    "id": role[0],
+                    "name": role[1],
+                    "display_name": role[2],
+                    "description": role[3],
+                    "permissions": role[4].split(',') if role[4] else [],
+                    "created_at": role[5],
+                    "updated_at": role[6],
+                }
+                for role in roles
+            ]
+            
+            return {
+                "roles": roles_list,
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total + page_size - 1) // page_size
+            }
+
+    def create_role(self, name: str, display_name: str, description: str = None, permissions: List[str] = None, created_by: int = None) -> Optional[int]:
+        """创建新角色。"""
+        try:
+            permissions_str = ','.join(permissions) if permissions else ''
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO roles (role_name, role_display_name, description, permissions, created_by) VALUES (?, ?, ?, ?, ?)",
+                    (name, display_name, description, permissions_str, created_by),
+                )
+                conn.commit()
+                return cursor.lastrowid
+        except sqlite3.IntegrityError:
+            return None
+
+    def update_role(self, role_id: int, display_name: str, description: str = None, permissions: List[str] = None, updated_by: int = None) -> bool:
+        """更新角色信息。"""
+        try:
+            permissions_str = ','.join(permissions) if permissions else ''
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE roles SET role_display_name = ?, description = ?, permissions = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (display_name, description, permissions_str, updated_by, role_id),
+                )
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception:
+            return False
+
+    def delete_role(self, role_id: int) -> bool:
+        """删除角色。"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM roles WHERE id = ?", (role_id,))
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception:
+            return False
+
+    def check_role_in_use(self, role_id: int) -> bool:
+        """检查角色是否正在被用户使用。"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            # 获取角色名称
+            cursor.execute("SELECT role_name FROM roles WHERE id = ?", (role_id,))
+            role = cursor.fetchone()
+            if not role:
+                return False
+            
+            role_name = role[0]
+            # 检查是否有用户使用此角色
+            cursor.execute("SELECT COUNT(*) FROM users WHERE role = ?", (role_name,))
+            count = cursor.fetchone()[0]
+            return count > 0
 
 
 class OpenManusWebUI:
@@ -1306,6 +1464,86 @@ class OpenManusWebUI:
                 return jsonify({"success": True, "data": user, "message": "获取用户详细信息成功", "code": 200})
             else:
                 return jsonify({"success": False, "data": None, "message": "用户不存在", "code": 404}), 404
+
+        # 角色管理API
+        @self.app.route("/admin/roles", methods=["GET"])
+        def admin_get_roles():
+            """获取所有角色（管理员）"""
+            if not self.is_admin():
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
+
+            # 获取分页参数
+            page = request.args.get('page', 1, type=int)
+            page_size = request.args.get('page_size', 10, type=int)
+            
+            # 限制页面大小
+            if page_size > 100:
+                page_size = 100
+            if page_size < 1:
+                page_size = 10
+            if page < 1:
+                page = 1
+
+            # 获取分页数据
+            result = self.db.get_roles_paginated(page, page_size)
+            return jsonify({"data": result, "message": "获取角色列表成功", "code": 200})
+
+        @self.app.route("/admin/roles", methods=["POST"])
+        def admin_create_role():
+            """创建角色（超级管理员）"""
+            if not self.is_super_admin():
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
+
+            data = request.get_json()
+            name = data.get("name")
+            display_name = data.get("display_name")
+            description = data.get("description")
+            permissions = data.get("permissions", [])
+
+            if not all([name, display_name]):
+                return jsonify({"data": None, "message": "角色名称和显示名称不能为空", "code": 400}), 400
+
+            current_user_id = session.get('user_id')
+            role_id = self.db.create_role(name, display_name, description, permissions, current_user_id)
+            if role_id:
+                return jsonify({"data": {"id": role_id, "name": name, "display_name": display_name}, "message": "角色创建成功", "code": 200})
+            else:
+                return jsonify({"data": None, "message": "创建角色失败，角色名称可能已存在", "code": 400}), 400
+
+        @self.app.route("/admin/roles/<int:role_id>", methods=["PUT"])
+        def admin_update_role(role_id):
+            """更新角色（超级管理员）"""
+            if not self.is_super_admin():
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
+
+            data = request.get_json()
+            display_name = data.get("display_name")
+            description = data.get("description")
+            permissions = data.get("permissions", [])
+
+            if not display_name:
+                return jsonify({"data": None, "message": "显示名称不能为空", "code": 400}), 400
+
+            current_user_id = session.get('user_id')
+            if self.db.update_role(role_id, display_name, description, permissions, current_user_id):
+                return jsonify({"data": {"id": role_id}, "message": "角色更新成功", "code": 200})
+            else:
+                return jsonify({"data": None, "message": "更新角色失败", "code": 500}), 500
+
+        @self.app.route("/admin/roles/<int:role_id>", methods=["DELETE"])
+        def admin_delete_role(role_id):
+            """删除角色（超级管理员）"""
+            if not self.is_super_admin():
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
+
+            # 检查是否有用户使用此角色
+            if self.db.check_role_in_use(role_id):
+                return jsonify({"data": None, "message": "无法删除正在使用的角色", "code": 400}), 400
+
+            if self.db.delete_role(role_id):
+                return jsonify({"data": {"id": role_id}, "message": "角色删除成功", "code": 200})
+            else:
+                return jsonify({"data": None, "message": "删除角色失败", "code": 500}), 500
 
         @self.app.route("/admin/users/batch", methods=["POST"])
         def admin_batch_user_operation():

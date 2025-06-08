@@ -740,11 +740,7 @@
                                             </label>
                                             <select class="form-control" id="userRoleFilter">
                                                 <option value="">全部角色</option>
-                                                <option value="user">普通用户</option>
-                                                <option value="admin">管理员</option>
-                                                <option value="user_admin">用户管理员</option>
-                                                <option value="role_admin">角色管理员</option>
-                                                <option value="super_admin">超级管理员</option>
+                                                <!-- 角色选项将通过JavaScript动态加载 -->
                                             </select>
                                         </div>
                                         <div class="search-field">
@@ -840,71 +836,40 @@
                         {% if session.role in ['super_admin', 'role_admin'] %}
                         <!-- 角色管理标签页 -->
                         <div id="roles" class="tab-pane">
-                            <h3>角色管理</h3>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="role-card border-primary">
-                                        <i class="fas fa-user fa-3x text-primary mb-3"></i>
-                                        <h5>普通用户</h5>
-                                        <p class="text-muted">基本聊天功能</p>
-                                        <ul class="list-unstyled text-start">
-                                            <li><i class="fas fa-check text-success me-2"></i>使用聊天功能</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>查看对话历史</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>修改个人信息</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="role-card border-warning">
-                                        <i class="fas fa-user-tie fa-3x text-warning mb-3"></i>
-                                        <h5>管理员</h5>
-                                        <p class="text-muted">基础管理权限</p>
-                                        <ul class="list-unstyled text-start">
-                                            <li><i class="fas fa-check text-success me-2"></i>所有普通用户权限</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>查看用户列表</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>查看系统统计</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="role-card border-warning">
-                                        <i class="fas fa-users-cog fa-3x text-warning mb-3"></i>
-                                        <h5>用户管理员</h5>
-                                        <p class="text-muted">用户管理权限</p>
-                                        <ul class="list-unstyled text-start">
-                                            <li><i class="fas fa-check text-success me-2"></i>所有管理员权限</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>创建/删除用户</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>管理用户状态</li>
-                                        </ul>
-                                    </div>
-                                </div>
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3>角色管理</h3>
+                                {% if session.role == 'super_admin' %}
+                                <button class="btn btn-primary" onclick="showCreateRoleModal()">
+                                    <i class="fas fa-plus me-2"></i>创建角色
+                                </button>
+                                {% endif %}
                             </div>
-                            <div class="row mt-4">
-                                <div class="col-md-4">
-                                    <div class="role-card border-warning">
-                                        <i class="fas fa-user-shield fa-3x text-warning mb-3"></i>
-                                        <h5>角色管理员</h5>
-                                        <p class="text-muted">角色管理权限</p>
-                                        <ul class="list-unstyled text-start">
-                                            <li><i class="fas fa-check text-success me-2"></i>所有管理员权限</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>查看角色信息</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>修改用户角色</li>
-                                        </ul>
-                                    </div>
+                            
+                            <!-- 角色列表 -->
+                            <div id="rolesList" class="row">
+                                <!-- 角色卡片将通过JavaScript动态加载 -->
+                            </div>
+                            
+                            <!-- 角色分页 -->
+                            <div id="rolesPagination" class="d-flex justify-content-between align-items-center mt-4" style="display: none !important;">
+                                <div class="pagination-info">
+                                    <span class="text-muted">共 <span id="rolesTotalCount">0</span> 个角色，第 <span id="currentRolesPageSpan">1</span> 页，共 <span id="rolesTotalPages">1</span> 页</span>
                                 </div>
-                                <div class="col-md-4">
-                                    <div class="role-card border-danger">
-                                        <i class="fas fa-crown fa-3x text-danger mb-3"></i>
-                                        <h5>超级管理员</h5>
-                                        <p class="text-muted">完全管理权限</p>
-                                        <ul class="list-unstyled text-start">
-                                            <li><i class="fas fa-check text-success me-2"></i>所有权限</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>系统配置管理</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>完全用户管理</li>
-                                            <li><i class="fas fa-check text-success me-2"></i>角色权限管理</li>
-                                        </ul>
-                                    </div>
-                                </div>
+                                <nav>
+                                    <ul class="pagination mb-0">
+                                        <li class="page-item" id="rolesPrevPage">
+                                            <a class="page-link" href="#" onclick="loadRolesPage(currentRolesPage - 1)">
+                                                <i class="fas fa-chevron-left"></i> 上一页
+                                            </a>
+                                        </li>
+                                        <div id="rolesPageNumbers" class="d-flex"></div>
+                                        <li class="page-item" id="rolesNextPage">
+                                            <a class="page-link" href="#" onclick="loadRolesPage(currentRolesPage + 1)">
+                                                下一页 <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </nav>
                             </div>
                         </div>
                         {% endif %}
@@ -960,13 +925,7 @@
                     <div class="mb-3">
                         <label for="newUserRole" class="form-label">角色</label>
                         <select class="form-control" id="newUserRole" required>
-                            <option value="user">普通用户</option>
-                            {% if session.role == 'super_admin' %}
-                            <option value="admin">管理员</option>
-                            <option value="user_admin">用户管理员</option>
-                            <option value="role_admin">角色管理员</option>
-                            <option value="super_admin">超级管理员</option>
-                            {% endif %}
+                            <!-- 角色选项将通过JavaScript动态加载 -->
                         </select>
                     </div>
                 </form>
@@ -1016,7 +975,23 @@
         
         // 根据标签页加载相应数据
         if (tabName === 'users') {
-            loadUsers();
+            // 先加载角色数据，然后初始化用户管理页面
+            loadAllRoles().then(() => {
+                // 初始化用户筛选的角色下拉框
+                const userRoleFilter = document.getElementById('userRoleFilter');
+                if (userRoleFilter) {
+                    renderRoleOptions(userRoleFilter, '', true); // 包含"全部角色"选项
+                }
+                
+                // 初始化创建用户的角色下拉框
+                const newUserRole = document.getElementById('newUserRole');
+                if (newUserRole) {
+                    renderRoleOptions(newUserRole);
+                }
+                
+                // 加载用户列表
+                loadUsers();
+            });
         } else if (tabName === 'config') {
             loadConfigs();
         }
@@ -1034,7 +1009,23 @@
         
         // 如果当前激活的是用户管理tab，确保加载用户数据
         if (activeTab === 'users') {
-            loadUsers();
+            // 先加载角色数据，然后初始化用户管理页面
+            loadAllRoles().then(() => {
+                // 初始化用户筛选的角色下拉框
+                const userRoleFilter = document.getElementById('userRoleFilter');
+                if (userRoleFilter) {
+                    renderRoleOptions(userRoleFilter, '', true); // 包含"全部角色"选项
+                }
+                
+                // 初始化创建用户的角色下拉框
+                const newUserRole = document.getElementById('newUserRole');
+                if (newUserRole) {
+                    renderRoleOptions(newUserRole);
+                }
+                
+                // 加载用户列表
+                loadUsers();
+            });
         }
         
         // 保存基本信息
@@ -1259,24 +1250,22 @@
             
             let roleSelect = '';
             if (canModifyRole) {
+                // 构建角色下拉框选项
+                let roleOptions = '';
+                allRoles.forEach(role => {
+                    const selected = user.role === role.name ? 'selected' : '';
+                    roleOptions += `<option value="${role.name}" ${selected}>${role.display_name}</option>`;
+                });
+                
                 roleSelect = `
                     <select class="form-select form-select-sm" onchange="updateUserRole(${user.id}, this.value)">
-                        <option value="user" ${user.role === 'user' ? 'selected' : ''}>普通用户</option>
-                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>管理员</option>
-                        <option value="user_admin" ${user.role === 'user_admin' ? 'selected' : ''}>用户管理员</option>
-                        <option value="role_admin" ${user.role === 'role_admin' ? 'selected' : ''}>角色管理员</option>
-                        <option value="super_admin" ${user.role === 'super_admin' ? 'selected' : ''}>超级管理员</option>
+                        ${roleOptions}
                     </select>
                 `;
             } else {
-                const roleNames = {
-                    'user': '普通用户',
-                    'admin': '管理员',
-                    'user_admin': '用户管理员',
-                    'role_admin': '角色管理员',
-                    'super_admin': '超级管理员'
-                };
-                roleSelect = roleNames[user.role] || user.role;
+                // 显示角色显示名称
+                const userRole = allRoles.find(role => role.name === user.role);
+                roleSelect = userRole ? userRole.display_name : user.role;
             }
             
             let actionButtons = '';
@@ -1724,6 +1713,564 @@
                 alert('保存配置文件失败，请稍后重试');
             });
     }
+    {% endif %}
+    
+    // 角色管理相关功能
+    {% if session.role in ['admin', 'super_admin', 'role_admin'] %}
+    // 分页相关全局变量
+    let currentRolesPage = 1;
+    let rolesPageSize = 9; // 每页显示9个角色卡片（3行x3列）
+    let rolesTotalPages = 1;
+    let rolesTotalCount = 0;
+    let currentRolesSearchParams = {};
+    
+    // 全局角色数据缓存
+    let allRoles = [];
+    
+    // 加载所有角色数据（用于下拉框）
+    function loadAllRoles() {
+        return fetch('/admin/roles?page=1&page_size=1000') // 获取大量数据确保包含所有角色
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code === 200) {
+                    allRoles = data.data.roles || [];
+                    return allRoles;
+                } else {
+                    throw new Error(data.message || '获取角色数据失败');
+                }
+            })
+            .catch(error => {
+                console.error('加载角色数据失败:', error);
+                allRoles = [];
+                return [];
+            });
+    }
+    
+    // 渲染角色下拉框选项
+    function renderRoleOptions(selectElement, selectedValue = '', includeAllOption = false) {
+        if (!selectElement) return;
+        
+        selectElement.innerHTML = '';
+        
+        if (includeAllOption) {
+            const allOption = document.createElement('option');
+            allOption.value = '';
+            allOption.textContent = '全部角色';
+            selectElement.appendChild(allOption);
+        }
+        
+        allRoles.forEach(role => {
+            const option = document.createElement('option');
+            option.value = role.name;
+            option.textContent = role.display_name;
+            if (role.name === selectedValue) {
+                option.selected = true;
+            }
+            selectElement.appendChild(option);
+        });
+    }
+    
+    // 加载角色列表
+    function loadRoles() {
+        loadRolesPage(1);
+    }
+    
+    // 加载指定页的角色数据
+    function loadRolesPage(page) {
+        if (page < 1 || page > rolesTotalPages) return;
+        
+        currentRolesPage = page;
+        
+        // 构建查询参数
+        const params = new URLSearchParams(currentRolesSearchParams);
+        params.append('page', page);
+        params.append('page_size', rolesPageSize);
+        
+        const url = '/admin/roles' + (params.toString() ? '?' + params.toString() : '');
+        
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code !== 200) {
+                    alert('加载角色列表失败: ' + data.message);
+                    return;
+                }
+                
+                // 处理分页数据
+                const responseData = data.data || {};
+                const roles = Array.isArray(responseData.roles) ? responseData.roles : 
+                             Array.isArray(responseData) ? responseData : [];
+                
+                // 更新分页信息
+                if (responseData.total !== undefined) {
+                    rolesTotalCount = responseData.total;
+                    rolesTotalPages = Math.ceil(rolesTotalCount / rolesPageSize);
+                } else {
+                    // 兼容旧接口，如果没有分页信息，则假设只有一页
+                    rolesTotalCount = roles.length;
+                    rolesTotalPages = 1;
+                }
+                
+                // 渲染角色列表
+                renderRolesList(roles);
+                
+                // 更新分页组件
+                updateRolesPagination();
+            })
+            .catch(error => {
+                console.error('加载角色列表失败:', error);
+                alert('加载角色列表失败，请稍后重试');
+            });
+    }
+    
+    // 更新角色分页组件
+    function updateRolesPagination() {
+        const paginationDiv = document.getElementById('rolesPagination');
+        const totalCountSpan = document.getElementById('rolesTotalCount');
+        const currentPageSpan = document.getElementById('currentRolesPageSpan');
+        const totalPagesSpan = document.getElementById('rolesTotalPages');
+        const prevPageBtn = document.getElementById('rolesPrevPage');
+        const nextPageBtn = document.getElementById('rolesNextPage');
+        const pageNumbersDiv = document.getElementById('rolesPageNumbers');
+        
+        if (!paginationDiv) return;
+        
+        // 更新统计信息
+        if (totalCountSpan) totalCountSpan.textContent = rolesTotalCount;
+        if (currentPageSpan) currentPageSpan.textContent = currentRolesPage;
+        if (totalPagesSpan) totalPagesSpan.textContent = rolesTotalPages;
+        
+        // 显示或隐藏分页组件
+        if (rolesTotalPages <= 1) {
+            paginationDiv.style.display = 'none';
+            return;
+        } else {
+            paginationDiv.style.display = 'flex';
+        }
+        
+        // 更新上一页按钮状态
+        if (prevPageBtn) {
+            if (currentRolesPage <= 1) {
+                prevPageBtn.classList.add('disabled');
+            } else {
+                prevPageBtn.classList.remove('disabled');
+            }
+        }
+        
+        // 更新下一页按钮状态
+        if (nextPageBtn) {
+            if (currentRolesPage >= rolesTotalPages) {
+                nextPageBtn.classList.add('disabled');
+            } else {
+                nextPageBtn.classList.remove('disabled');
+            }
+        }
+        
+        // 生成页码按钮
+        if (pageNumbersDiv) {
+            pageNumbersDiv.innerHTML = '';
+            
+            // 计算显示的页码范围
+            let startPage = Math.max(1, currentRolesPage - 2);
+            let endPage = Math.min(rolesTotalPages, currentRolesPage + 2);
+            
+            // 如果总页数较少，显示所有页码
+            if (rolesTotalPages <= 5) {
+                startPage = 1;
+                endPage = rolesTotalPages;
+            }
+            
+            // 添加第一页
+            if (startPage > 1) {
+                const firstPageLi = document.createElement('li');
+                firstPageLi.className = 'page-item';
+                firstPageLi.innerHTML = `<a class="page-link" href="#" onclick="loadRolesPage(1)">1</a>`;
+                pageNumbersDiv.appendChild(firstPageLi);
+                
+                if (startPage > 2) {
+                    const ellipsisLi = document.createElement('li');
+                    ellipsisLi.className = 'page-item disabled';
+                    ellipsisLi.innerHTML = '<span class="page-link">...</span>';
+                    pageNumbersDiv.appendChild(ellipsisLi);
+                }
+            }
+            
+            // 添加页码按钮
+            for (let i = startPage; i <= endPage; i++) {
+                const pageLi = document.createElement('li');
+                pageLi.className = 'page-item' + (i === currentRolesPage ? ' active' : '');
+                pageLi.innerHTML = `<a class="page-link" href="#" onclick="loadRolesPage(${i})">${i}</a>`;
+                pageNumbersDiv.appendChild(pageLi);
+            }
+            
+            // 添加最后一页
+            if (endPage < rolesTotalPages) {
+                if (endPage < rolesTotalPages - 1) {
+                    const ellipsisLi = document.createElement('li');
+                    ellipsisLi.className = 'page-item disabled';
+                    ellipsisLi.innerHTML = '<span class="page-link">...</span>';
+                    pageNumbersDiv.appendChild(ellipsisLi);
+                }
+                
+                const lastPageLi = document.createElement('li');
+                lastPageLi.className = 'page-item';
+                lastPageLi.innerHTML = `<a class="page-link" href="#" onclick="loadRolesPage(${rolesTotalPages})">${rolesTotalPages}</a>`;
+                pageNumbersDiv.appendChild(lastPageLi);
+            }
+        }
+    }
+
+    // 渲染角色列表
+    function renderRolesList(roles) {
+        const rolesList = document.getElementById('rolesList');
+        rolesList.innerHTML = '';
+        
+        roles.forEach(role => {
+            const roleCard = createRoleCard(role);
+            rolesList.appendChild(roleCard);
+        });
+    }
+    
+    // 创建角色卡片
+    function createRoleCard(role) {
+        const col = document.createElement('div');
+        col.className = 'col-md-4 mb-4';
+        
+        const borderColor = getRoleBorderColor(role.name);
+        const iconClass = getRoleIcon(role.name);
+        const textColor = getRoleTextColor(role.name);
+        
+        col.innerHTML = `
+            <div class="role-card ${borderColor}">
+                <i class="${iconClass} fa-3x ${textColor} mb-3"></i>
+                <h5>${role.display_name}</h5>
+                <p class="text-muted">${role.description}</p>
+                <div class="role-permissions">
+                    <small class="text-muted">权限: ${role.permissions}</small>
+                </div>
+                {% if session.role == 'super_admin' %}
+                <div class="role-actions mt-3">
+                    <button class="btn btn-sm btn-outline-primary me-2" onclick="editRole('${role.name}')">
+                        <i class="fas fa-edit"></i> 编辑
+                    </button>
+                    ${role.name !== 'super_admin' && role.name !== 'user' ? `
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteRole('${role.name}')">
+                        <i class="fas fa-trash"></i> 删除
+                    </button>` : ''}
+                </div>
+                {% endif %}
+            </div>
+        `;
+        
+        return col;
+    }
+    
+    // 获取角色边框颜色
+    function getRoleBorderColor(roleName) {
+        const colorMap = {
+            'user': 'border-primary',
+            'admin': 'border-warning',
+            'user_admin': 'border-warning',
+            'role_admin': 'border-warning',
+            'super_admin': 'border-danger'
+        };
+        return colorMap[roleName] || 'border-secondary';
+    }
+    
+    // 获取角色图标
+    function getRoleIcon(roleName) {
+        const iconMap = {
+            'user': 'fas fa-user',
+            'admin': 'fas fa-user-tie',
+            'user_admin': 'fas fa-users-cog',
+            'role_admin': 'fas fa-user-shield',
+            'super_admin': 'fas fa-crown'
+        };
+        return iconMap[roleName] || 'fas fa-user-circle';
+    }
+    
+    // 获取角色文字颜色
+    function getRoleTextColor(roleName) {
+        const colorMap = {
+            'user': 'text-primary',
+            'admin': 'text-warning',
+            'user_admin': 'text-warning',
+            'role_admin': 'text-warning',
+            'super_admin': 'text-danger'
+        };
+        return colorMap[roleName] || 'text-secondary';
+    }
+    
+    {% if session.role == 'super_admin' %}
+    // 显示创建角色模态框
+    function showCreateRoleModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">创建新角色</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="createRoleForm">
+                            <div class="mb-3">
+                                <label for="roleName" class="form-label">角色名称</label>
+                                <input type="text" class="form-control" id="roleName" required>
+                                <div class="form-text">角色名称用于系统内部标识，建议使用英文</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="roleDisplayName" class="form-label">显示名称</label>
+                                <input type="text" class="form-control" id="roleDisplayName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="roleDescription" class="form-label">角色描述</label>
+                                <textarea class="form-control" id="roleDescription" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="rolePermissions" class="form-label">权限列表</label>
+                                <textarea class="form-control" id="rolePermissions" rows="3" placeholder="请输入权限描述，如：查看用户列表,管理用户状态"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary" onclick="createRole()">创建角色</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        
+        modal.addEventListener('hidden.bs.modal', () => {
+            document.body.removeChild(modal);
+        });
+    }
+    
+    // 创建角色
+    function createRole() {
+        const name = document.getElementById('roleName').value.trim();
+        const displayName = document.getElementById('roleDisplayName').value.trim();
+        const description = document.getElementById('roleDescription').value.trim();
+        const permissions = document.getElementById('rolePermissions').value.trim();
+        
+        if (!name || !displayName) {
+            alert('请填写角色名称和显示名称');
+            return;
+        }
+        
+        fetch('/admin/roles', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: name,
+                display_name: displayName,
+                description: description,
+                permissions: permissions
+            })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code === 200) {
+                    alert('角色创建成功！');
+                    bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
+                    loadRoles(); // 重新加载角色列表
+                } else {
+                    alert('创建失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('创建角色失败:', error);
+                alert('创建角色失败，请稍后重试');
+            });
+    }
+    
+    // 编辑角色
+    function editRole(roleName) {
+        // 先获取角色信息
+        fetch(`/admin/roles`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.code !== 200) {
+                    alert('获取角色信息失败: ' + data.message);
+                    return;
+                }
+                
+                const role = data.data.find(r => r.name === roleName);
+                if (!role) {
+                    alert('角色不存在');
+                    return;
+                }
+                
+                showEditRoleModal(role);
+            })
+            .catch(error => {
+                console.error('获取角色信息失败:', error);
+                alert('获取角色信息失败，请稍后重试');
+            });
+    }
+    
+    // 显示编辑角色模态框
+    function showEditRoleModal(role) {
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">编辑角色: ${role.display_name}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editRoleForm">
+                            <div class="mb-3">
+                                <label for="editRoleName" class="form-label">角色名称</label>
+                                <input type="text" class="form-control" id="editRoleName" value="${role.name}" readonly>
+                                <div class="form-text">角色名称不可修改</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editRoleDisplayName" class="form-label">显示名称</label>
+                                <input type="text" class="form-control" id="editRoleDisplayName" value="${role.display_name}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editRoleDescription" class="form-label">角色描述</label>
+                                <textarea class="form-control" id="editRoleDescription" rows="3">${role.description || ''}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editRolePermissions" class="form-label">权限列表</label>
+                                <textarea class="form-control" id="editRolePermissions" rows="3">${role.permissions || ''}</textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary" onclick="updateRole('${role.name}')">保存修改</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        
+        modal.addEventListener('hidden.bs.modal', () => {
+            document.body.removeChild(modal);
+        });
+    }
+    
+    // 更新角色
+    function updateRole(roleName) {
+        const displayName = document.getElementById('editRoleDisplayName').value.trim();
+        const description = document.getElementById('editRoleDescription').value.trim();
+        const permissions = document.getElementById('editRolePermissions').value.trim();
+        
+        if (!displayName) {
+            alert('请填写显示名称');
+            return;
+        }
+        
+        fetch(`/admin/roles/${roleName}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                display_name: displayName,
+                description: description,
+                permissions: permissions
+            })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code === 200) {
+                    alert('角色更新成功！');
+                    bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
+                    loadRoles(); // 重新加载角色列表
+                } else {
+                    alert('更新失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('更新角色失败:', error);
+                alert('更新角色失败，请稍后重试');
+            });
+    }
+    
+    // 删除角色
+    function deleteRole(roleName) {
+        if (!confirm(`确定要删除角色 "${roleName}" 吗？\n\n注意：如果有用户正在使用此角色，删除操作将失败。`)) {
+            return;
+        }
+        
+        fetch(`/admin/roles/${roleName}`, {
+            method: 'DELETE'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code === 200) {
+                    alert('角色删除成功！');
+                    loadRoles(); // 重新加载角色列表
+                } else {
+                    alert('删除失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('删除角色失败:', error);
+                alert('删除角色失败，请稍后重试');
+            });
+    }
+    {% endif %}
+    
+    // 页面加载时初始化角色列表
+    document.addEventListener('DOMContentLoaded', function() {
+        // 如果当前标签页是角色管理，则加载角色列表
+        const rolesTab = document.getElementById('roles');
+        if (rolesTab && rolesTab.classList.contains('active')) {
+            loadRoles();
+        }
+        
+        // 监听标签页切换事件
+        const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
+        tabButtons.forEach(button => {
+            button.addEventListener('shown.bs.tab', function(event) {
+                if (event.target.getAttribute('href') === '#roles') {
+                    loadRoles();
+                }
+            });
+        });
+    });
     {% endif %}
     {% endif %}
 </script>
