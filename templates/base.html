@@ -231,23 +231,16 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                             data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i>{{ session.username }}
+                            <i class="fas fa-user me-1"></i>{{ session.display_name or session.username }}
                         </a>
                         <ul class="dropdown-menu">
-                            {% if session.role == 'super_admin' %}
-                            <li><a class="dropdown-item" href="{{ url_for('admin_panel') }}"><i
-                                        class="fas fa-cogs me-2"></i>管理面板</a></li>
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            {% endif %}
-                            <li><a class="dropdown-item" href="{{ url_for('settings') }}"><i
-                                        class="fas fa-cog me-2"></i>设置</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('management') }}"><i
+                                        class="fas fa-cogs me-2"></i>管理设置</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
                             <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i
-                                        class="fas fa-sign-out-alt me-2"></i>退出登录</a></li>
+                                        class="fas fa-sign-out-alt me-2"></i>退出</a></li>
                         </ul>
                     </li>
                     {% else %}

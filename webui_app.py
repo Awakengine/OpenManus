@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for, Response
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.agent.manus import Manus
@@ -55,6 +55,14 @@ class DatabaseManager:
             # 如果角色列不存在则添加（用于现有数据库）
             try:
                 cursor.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
+                conn.commit()
+            except sqlite3.OperationalError:
+                # 列已存在
+                pass
+
+            # 如果昵称列不存在则添加（用于现有数据库）
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN nickname TEXT")
                 conn.commit()
             except sqlite3.OperationalError:
                 # 列已存在
@@ -285,7 +293,7 @@ class DatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT id, username, email, role, created_at, last_login, is_active FROM users ORDER BY created_at DESC"
+                "SELECT id, username, email, role, created_at, last_login, is_active, nickname FROM users ORDER BY created_at DESC"
             )
             users = cursor.fetchall()
 
@@ -298,6 +306,7 @@ class DatabaseManager:
                     "created_at": user[4],
                     "last_login": user[5],
                     "is_active": bool(user[6]),
+                    "nickname": user[7],
                 }
                 for user in users
             ]
@@ -396,7 +405,7 @@ class DatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT id, username, email, password_hash, role, created_at, last_login, is_active FROM users WHERE id = ?",
+                "SELECT id, username, email, password_hash, role, created_at, last_login, is_active, nickname FROM users WHERE id = ?",
                 (user_id,),
             )
             user = cursor.fetchone()
@@ -411,6 +420,7 @@ class DatabaseManager:
                     "created_at": user[5],
                     "last_login": user[6],
                     "is_active": bool(user[7]),
+                    "nickname": user[8],
                 }
         return None
 
@@ -427,8 +437,12 @@ class DatabaseManager:
         except sqlite3.IntegrityError:
             return False
 
-    def update_user_password(self, user_id: int, new_password: str) -> bool:
-        """更新用户密码。"""
+    def update_user_password(self, user_id: int, new_password: str) -> tuple[bool, str]:
+        """更新用户密码。
+        
+        Returns:
+            tuple[bool, str]: (是否成功, 错误信息)
+        """
         try:
             password_hash = generate_password_hash(new_password)
             with sqlite3.connect(self.db_path) as conn:
@@ -436,6 +450,24 @@ class DatabaseManager:
                 cursor.execute(
                     "UPDATE users SET password_hash = ? WHERE id = ?",
                     (password_hash, user_id),
+                )
+                conn.commit()
+                if cursor.rowcount > 0:
+                    return True, ""
+                else:
+                    return False, "用户不存在或密码未发生变化"
+        except sqlite3.Error as e:
+            return False, f"数据库错误: {str(e)}"
+        except Exception as e:
+            return False, f"系统错误: {str(e)}"
+
+    def update_user_nickname(self, user_id: int, nickname: str) -> bool:
+        """更新用户昵称。"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE users SET nickname = ? WHERE id = ?", (nickname, user_id)
                 )
                 conn.commit()
                 return cursor.rowcount > 0
@@ -451,7 +483,7 @@ class DatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                """SELECT id, username, email, role, created_at, last_login, is_active,
+                """SELECT id, username, email, role, created_at, last_login, is_active, nickname,
                    (SELECT COUNT(*) FROM conversations WHERE user_id = ?) as conversation_count,
                    (SELECT COUNT(*) FROM messages WHERE conversation_id IN
                     (SELECT id FROM conversations WHERE user_id = ?)) as message_count
@@ -469,8 +501,9 @@ class DatabaseManager:
                     "created_at": user[4],
                     "last_login": user[5],
                     "is_active": bool(user[6]),
-                    "conversation_count": user[7],
-                    "message_count": user[8],
+                    "nickname": user[7],
+                    "conversation_count": user[8],
+                    "message_count": user[9],
                 }
         return None
 
@@ -580,12 +613,17 @@ class OpenManusWebUI:
 
                 user = self.db.authenticate_user(username, password)
                 if user:
+                    # 获取完整用户信息包括昵称
+                    full_user = self.db.get_user_by_id(user["id"])
+                    display_name = full_user.get("nickname") if full_user and full_user.get("nickname") else user["username"]
+                    
                     session["user_id"] = user["id"]
                     session["username"] = user["username"]
+                    session["display_name"] = display_name
                     session["role"] = user["role"]
-                    return jsonify({"success": True})
+                    return jsonify({"success": True, "data": {"user_id": user["id"], "username": user["username"], "display_name": display_name, "role": user["role"]}, "message": "登录成功", "code": 200})
                 else:
-                    return jsonify({"success": False, "error": "用户名或密码错误"})
+                    return jsonify({"success": False, "data": None, "message": "用户名或密码错误", "code": 401})
 
             return render_template("login.html")
 
@@ -598,9 +636,9 @@ class OpenManusWebUI:
                 password = data.get("password")
 
                 if self.db.create_user(username, email, password):
-                    return jsonify({"success": True})
+                    return jsonify({"success": True, "data": {"username": username, "email": email}, "message": "注册成功", "code": 200})
                 else:
-                    return jsonify({"success": False, "error": "用户名或邮箱已存在"})
+                    return jsonify({"success": False, "data": None, "message": "用户名或邮箱已存在", "code": 400})
 
             return render_template("register.html")
 
@@ -616,6 +654,13 @@ class OpenManusWebUI:
                 return redirect(url_for("login"))
             return render_template("settings.html")
 
+        @self.app.route("/management")
+        def management():
+            """统一管理设置页面"""
+            if "user_id" not in session:
+                return redirect(url_for("login"))
+            return render_template("management.html", session=session)
+
         @self.app.route("/api/profile", methods=["GET"])
         def get_profile():
             """获取用户个人信息"""
@@ -627,21 +672,24 @@ class OpenManusWebUI:
                 return jsonify(
                     {
                         "success": True,
-                        "user": {
+                        "data": {
                             "username": user["username"],
                             "email": user["email"],
                             "role": user["role"],
+                            "nickname": user.get("nickname", ""),
                         },
+                        "message": "获取用户信息成功",
+                        "code": 200
                     }
                 )
             else:
-                return jsonify({"error": "用户不存在"}), 404
+                return jsonify({"success": False, "data": None, "message": "用户不存在", "code": 404}), 404
 
         @self.app.route("/api/profile", methods=["PUT"])
         def update_profile():
             """更新用户个人信息"""
             if "user_id" not in session:
-                return jsonify({"error": "未认证"}), 401
+                return jsonify({"success": False, "data": None, "message": "未认证", "code": 401}), 401
 
             data = request.get_json()
             email = data.get("email")
@@ -649,42 +697,110 @@ class OpenManusWebUI:
             new_password = data.get("newPassword")
 
             if not email:
-                return jsonify({"error": "邮箱不能为空"}), 400
+                return jsonify({"success": False, "data": None, "message": "邮箱不能为空", "code": 400}), 400
 
             # 验证当前密码
             user = self.db.get_user_by_id(session["user_id"])
             if not user:
-                return jsonify({"error": "用户不存在"}), 404
+                return jsonify({"success": False, "data": None, "message": "用户不存在", "code": 404}), 404
 
             if not self.db.verify_password(current_password, user["password_hash"]):
-                return jsonify({"error": "当前密码错误"}), 400
+                return jsonify({"success": False, "data": None, "message": "当前密码错误", "code": 400}), 400
 
             # 更新邮箱
             if not self.db.update_user_email(session["user_id"], email):
-                return jsonify({"error": "邮箱更新失败，可能已被其他用户使用"}), 400
+                return jsonify({"success": False, "data": None, "message": "邮箱更新失败，可能已被其他用户使用", "code": 400}), 400
 
             # 如果提供了新密码，则更新密码
             if new_password:
                 if len(new_password) < 6:
-                    return jsonify({"error": "新密码长度至少6位"}), 400
+                    return jsonify({"success": False, "data": None, "message": "新密码长度至少6位", "code": 400}), 400
 
-                if not self.db.update_user_password(session["user_id"], new_password):
-                    return jsonify({"error": "密码更新失败"}), 500
+                success, error_msg = self.db.update_user_password(session["user_id"], new_password)
+                if not success:
+                    return jsonify({"success": False, "data": None, "message": error_msg or "密码更新失败", "code": 500}), 500
 
-            return jsonify({"success": True})
+            return jsonify({"success": True, "data": {"email": email}, "message": "个人信息更新成功", "code": 200})
+
+        @self.app.route("/api/profile/basic", methods=["PUT"])
+        def update_profile_basic():
+            """更新用户基本信息（昵称、邮箱）"""
+            if "user_id" not in session:
+                return jsonify({"success": False, "data": None, "message": "未认证", "code": 401}), 401
+
+            data = request.get_json()
+            email = data.get("email")
+            nickname = data.get("nickname")
+
+            if not email:
+                return jsonify({"success": False, "data": None, "message": "邮箱不能为空", "code": 400}), 400
+
+            # 检查用户是否存在
+            user = self.db.get_user_by_id(session["user_id"])
+            if not user:
+                return jsonify({"success": False, "data": None, "message": "用户不存在", "code": 404}), 404
+
+            # 更新邮箱
+            if not self.db.update_user_email(session["user_id"], email):
+                return jsonify({"success": False, "data": None, "message": "邮箱更新失败，可能已被其他用户使用", "code": 400}), 400
+
+            # 更新昵称
+            if nickname is not None:
+                if not self.db.update_user_nickname(session["user_id"], nickname):
+                    return jsonify({"success": False, "data": None, "message": "昵称更新失败", "code": 500}), 500
+                # 更新session中的display_name
+                session["display_name"] = nickname if nickname else session.get("username", "")
+
+            return jsonify({"success": True, "data": {"email": email, "nickname": nickname}, "message": "基本信息更新成功", "code": 200})
+
+        @self.app.route("/api/profile/password", methods=["PUT"])
+        def update_profile_password():
+            """修改用户密码"""
+            if "user_id" not in session:
+                return jsonify({"success": False, "data": None, "message": "未认证", "code": 401}), 401
+
+            data = request.get_json()
+            current_password = data.get("currentPassword")
+            new_password = data.get("newPassword")
+
+            if not current_password:
+                return jsonify({"success": False, "data": None, "message": "请输入当前密码", "code": 400}), 400
+
+            if not new_password:
+                return jsonify({"success": False, "data": None, "message": "请输入新密码", "code": 400}), 400
+
+            if len(new_password) < 6:
+                return jsonify({"success": False, "data": None, "message": "新密码长度至少6位", "code": 400}), 400
+
+            # 验证当前密码
+            user = self.db.get_user_by_id(session["user_id"])
+            if not user:
+                return jsonify({"success": False, "data": None, "message": "用户不存在", "code": 404}), 404
+
+            if not self.db.verify_password(current_password, user["password_hash"]):
+                return jsonify({"success": False, "data": None, "message": "当前密码错误", "code": 400}), 400
+
+            # 更新密码
+            success, error_msg = self.db.update_user_password(session["user_id"], new_password)
+            if not success:
+                return jsonify({"success": False, "data": None, "message": error_msg or "密码更新失败", "code": 500}), 500
+
+            # 密码修改成功后清除session，强制重新登录
+            session.clear()
+            return jsonify({"success": True, "data": {"logout": True}, "message": "密码修改成功，请重新登录", "code": 200})
 
         @self.app.route("/api/conversations")
         def get_conversations():
             if "user_id" not in session:
-                return jsonify({"error": "未认证"}), 401
+                return jsonify({"success": False, "data": None, "message": "未认证", "code": 401}), 401
 
             conversations = self.db.get_user_conversations(session["user_id"])
-            return jsonify({"success": True, "conversations": conversations})
+            return jsonify({"success": True, "data": {"conversations": conversations}, "message": "获取对话列表成功", "code": 200})
 
         @self.app.route("/api/conversations", methods=["POST"])
         def create_conversation():
             if "user_id" not in session:
-                return jsonify({"error": "未认证"}), 401
+                return jsonify({"success": False, "data": None, "message": "未认证", "code": 401}), 401
 
             # 支持both JSON and form data
             if request.is_json:
@@ -694,26 +810,26 @@ class OpenManusWebUI:
                 title = request.form.get("title", "New Conversation")
 
             conversation_id = self.db.create_conversation(session["user_id"], title)
-            return jsonify({"success": True, "conversation_id": conversation_id, "title": title})
+            return jsonify({"success": True, "data": {"conversation_id": conversation_id, "title": title}, "message": "创建对话成功", "code": 200})
 
         @self.app.route("/api/conversations/<conversation_id>/messages")
         def get_messages(conversation_id):
             if "user_id" not in session:
-                return jsonify({"error": "未认证"}), 401
+                return jsonify({"success": False, "data": None, "message": "未认证", "code": 401}), 401
 
             messages = self.db.get_conversation_messages(conversation_id)
-            return jsonify(messages)
+            return jsonify({"success": True, "data": {"messages": messages}, "message": "获取消息列表成功", "code": 200})
 
         @self.app.route("/api/chat", methods=["POST"])
         def api_chat():
             if "user_id" not in session:
-                return jsonify({"success": False, "message": "请先登录"})
+                return jsonify({"success": False, "data": None, "message": "请先登录", "code": 401})
 
             message = request.form.get("message")
             conversation_id = request.form.get("conversation_id")
 
             if not message:
-                return jsonify({"success": False, "message": "消息不能为空"})
+                return jsonify({"success": False, "data": None, "message": "消息不能为空", "code": 400})
 
             try:
                 # 如果没有提供conversation_id，创建新对话
@@ -737,14 +853,18 @@ class OpenManusWebUI:
                 return jsonify(
                     {
                         "success": True,
-                        "response": response,
-                        "conversation_id": conversation_id,
+                        "data": {
+                            "response": response,
+                            "conversation_id": conversation_id,
+                        },
+                        "message": "聊天成功",
+                        "code": 200
                     }
                 )
 
             except Exception as e:
                 logger.error(f"Chat error: {e}")
-                return jsonify({"success": False, "message": "处理消息时发生错误"})
+                return jsonify({"success": False, "data": None, "message": "处理消息时发生错误", "code": 500})
 
         @self.app.route("/api/chat-guest", methods=["POST"])
         def api_chat_guest():
@@ -752,27 +872,116 @@ class OpenManusWebUI:
             message = request.form.get("message")
 
             if not message:
-                return jsonify({"success": False, "message": "消息不能为空"})
+                return jsonify({"success": False, "data": None, "message": "消息不能为空", "code": 400})
 
             try:
                 # 调用OpenManus代理
                 response = asyncio.run(self.process_with_agent(message, None))
 
-                return jsonify({"success": True, "response": response})
+                return jsonify({"success": True, "data": {"response": response}, "message": "游客聊天成功", "code": 200})
 
             except Exception as e:
                 logger.error(f"Guest chat error: {e}")
-                return jsonify({"success": False, "message": "处理消息时发生错误"})
+                return jsonify({"success": False, "data": None, "message": "处理消息时发生错误", "code": 500})
+
+        @self.app.route("/api/chat-stream", methods=["POST"])
+        def api_chat_stream():
+            """流式聊天API，支持实时输出"""
+            if "user_id" not in session:
+                return jsonify({"success": False, "data": None, "message": "请先登录", "code": 401})
+
+            message = request.form.get("message")
+            conversation_id = request.form.get("conversation_id")
+
+            if not message:
+                return jsonify({"success": False, "data": None, "message": "消息不能为空", "code": 400})
+
+            def generate():
+                try:
+                    # 如果没有提供conversation_id，创建新对话
+                    if not conversation_id:
+                        new_conversation_id = self.db.create_conversation(
+                            session["user_id"],
+                            f"对话 {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                        )
+                    else:
+                        new_conversation_id = conversation_id
+
+                    # 保存用户消息
+                    self.db.save_message(new_conversation_id, "user", message)
+
+                    # 调用OpenManus代理并流式输出
+                    full_response = ""
+                    for chunk in self.process_with_agent_stream(message, new_conversation_id):
+                        if chunk:
+                            full_response += chunk
+                            yield f"data: {json.dumps({'type': 'content', 'content': chunk})}\n\n"
+
+                    # 保存助手回复
+                    self.db.save_message(new_conversation_id, "assistant", full_response)
+
+                    # 发送完成信号
+                    yield f"data: {json.dumps({'type': 'done', 'conversation_id': new_conversation_id})}\n\n"
+                    yield "data: [DONE]\n\n"
+
+                except Exception as e:
+                    logger.error(f"Stream chat error: {e}")
+                    yield f"data: {json.dumps({'type': 'error', 'message': '处理消息时发生错误'})}\n\n"
+
+            return Response(generate(), mimetype='text/plain')
+
+        @self.app.route("/api/chat-guest-stream", methods=["POST"])
+        def api_chat_guest_stream():
+            """游客流式聊天API，不保存对话记录"""
+            message = request.form.get("message")
+
+            if not message:
+                return jsonify({"success": False, "data": None, "message": "消息不能为空", "code": 400})
+
+            def generate():
+                try:
+                    # 调用OpenManus代理并流式输出
+                    for chunk in self.process_with_agent_stream(message, None):
+                        if chunk:
+                            yield f"data: {json.dumps({'type': 'content', 'content': chunk})}\n\n"
+
+                    # 发送完成信号
+                    yield f"data: {json.dumps({'type': 'done'})}\n\n"
+                    yield "data: [DONE]\n\n"
+
+                except Exception as e:
+                    logger.error(f"Guest stream chat error: {e}")
+                    yield f"data: {json.dumps({'type': 'error', 'message': '处理消息时发生错误'})}\n\n"
+
+            return Response(generate(), mimetype='text/plain')
 
         @self.app.route("/api/check-auth", methods=["GET"])
         def api_check_auth():
             """检查用户登录状态"""
+            # 调试信息
+            logger.info(f"API check-auth called - Session: {dict(session)}")
+            
+            if "user_id" not in session:
+                logger.warning("API check-auth: User not authenticated")
+                return jsonify({"success": False, "data": None, "message": "未认证", "code": 401}), 401
+            
+            # 获取用户完整信息包括昵称
+            user = self.db.get_user_by_id(session.get("user_id"))
+            display_name = user.get("nickname") if user and user.get("nickname") else session.get("username", "")
+            
             return jsonify(
                 {
-                    "authenticated": "user_id" in session,
-                    "username": session.get("username", ""),
-                    "role": session.get("role", "user"),
-                    "user_id": session.get("user_id", ""),
+                    "success": True,
+                    "data": {
+                        "authenticated": True,
+                        "username": session.get("username", ""),
+                        "display_name": display_name,
+                        "nickname": user.get("nickname", "") if user else "",
+                        "role": session.get("role", "user"),
+                        "user_id": session.get("user_id", ""),
+                    },
+                    "message": "认证状态检查成功",
+                    "code": 200
                 }
             )
 
@@ -780,70 +989,76 @@ class OpenManusWebUI:
         @self.app.route("/admin")
         def admin_panel():
             """管理员面板"""
+            # 调试信息
+            logger.info(f"Admin panel access attempt - Session: {dict(session)}")
+            logger.info(f"User role from session: {session.get('role', 'None')}")
+            logger.info(f"Is admin check result: {self.is_admin()}")
+            
             if not self.is_admin():
+                logger.warning("Admin access denied, redirecting to login")
                 return redirect(url_for("login"))
-            return render_template("admin.html")
+            return render_template("admin.html", session=session)
 
         @self.app.route("/admin/users", methods=["GET"])
         def admin_get_users():
             """获取所有用户（管理员）"""
             if not self.is_admin():
-                return jsonify({"error": "权限不足"}), 403
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
 
             users = self.db.get_all_users()
-            return jsonify({"users": users})
+            return jsonify({"data": users, "message": "获取用户列表成功", "code": 200})
 
         @self.app.route("/admin/users/<int:user_id>/role", methods=["PUT"])
         def admin_update_user_role(user_id):
             """更新用户角色（超级管理员）"""
             if not self.is_super_admin():
-                return jsonify({"error": "权限不足"}), 403
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
 
             data = request.get_json()
             role = data.get("role")
 
             if role not in ["user", "admin", "super_admin"]:
-                return jsonify({"error": "无效的角色"}), 400
+                return jsonify({"data": None, "message": "无效的角色", "code": 400}), 400
 
             if self.db.update_user_role(user_id, role):
-                return jsonify({"success": True})
+                return jsonify({"data": {"user_id": user_id, "role": role}, "message": "角色更新成功", "code": 200})
             else:
-                return jsonify({"error": "更新失败"}), 500
+                return jsonify({"data": None, "message": "更新失败", "code": 500}), 500
 
         @self.app.route("/admin/users/<int:user_id>/status", methods=["PUT"])
         def admin_update_user_status(user_id):
             """更新用户状态（管理员）"""
             if not self.is_admin():
-                return jsonify({"error": "权限不足"}), 403
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
 
             data = request.get_json()
             is_active = data.get("is_active")
 
             if self.db.update_user_status(user_id, is_active):
-                return jsonify({"success": True})
+                return jsonify({"data": {"user_id": user_id, "is_active": is_active}, "message": "用户状态更新成功", "code": 200})
             else:
-                return jsonify({"error": "更新失败"}), 500
+                return jsonify({"data": None, "message": "更新失败", "code": 500}), 500
 
         @self.app.route("/admin/users/<int:user_id>", methods=["DELETE"])
         def admin_delete_user(user_id):
             """删除用户（超级管理员）"""
             if not self.is_super_admin():
-                return jsonify({"error": "权限不足"}), 403
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
 
             # 不能删除自己
             if user_id == session.get("user_id"):
-                return jsonify({"error": "不能删除自己"}), 400
+                return jsonify({"data": None, "message": "不能删除自己", "code": 400}), 400
 
             if self.db.delete_user(user_id):
-                return jsonify({"success": True})
+                return jsonify({"data": {"user_id": user_id}, "message": "用户删除成功", "code": 200})
             else:
-                return jsonify({"error": "删除失败"}), 500
+                return jsonify({"data": None, "message": "删除失败", "code": 500}), 500
 
         @self.app.route("/admin/users", methods=["POST"])
         def admin_create_user():
             """创建用户（管理员）"""
             if not self.is_admin():
-                return jsonify({"error": "权限不足"}), 403
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
 
             data = request.get_json()
             username = data.get("username")
@@ -852,98 +1067,98 @@ class OpenManusWebUI:
             role = data.get("role", "user")
 
             if not all([username, email, password]):
-                return jsonify({"error": "用户名、邮箱和密码不能为空"}), 400
+                return jsonify({"data": None, "message": "用户名、邮箱和密码不能为空", "code": 400}), 400
 
             if role not in ["user", "admin", "super_admin"]:
-                return jsonify({"error": "无效的角色"}), 400
+                return jsonify({"data": None, "message": "无效的角色", "code": 400}), 400
 
             # 只有超级管理员可以创建管理员和超级管理员
             if role in ["admin", "super_admin"] and not self.is_super_admin():
-                return jsonify({"error": "权限不足，无法创建管理员用户"}), 403
+                return jsonify({"data": None, "message": "权限不足，无法创建管理员用户", "code": 403}), 403
 
             if self.db.create_user_with_role(username, email, password, role):
-                return jsonify({"success": True})
+                return jsonify({"data": {"username": username, "email": email, "role": role}, "message": "用户创建成功", "code": 200})
             else:
-                return jsonify({"error": "创建用户失败，用户名或邮箱可能已存在"}), 400
+                return jsonify({"data": None, "message": "创建用户失败，用户名或邮箱可能已存在", "code": 400}), 400
 
         @self.app.route("/admin/users/<int:user_id>/reset-password", methods=["PUT"])
         def admin_reset_password(user_id):
             """重置用户密码（管理员）"""
             if not self.is_admin():
-                return jsonify({"error": "权限不足"}), 403
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
 
             data = request.get_json()
             new_password = data.get("new_password")
 
             if not new_password:
-                return jsonify({"error": "新密码不能为空"}), 400
+                return jsonify({"data": None, "message": "新密码不能为空", "code": 400}), 400
 
             if self.db.reset_user_password(user_id, new_password):
-                return jsonify({"success": True})
+                return jsonify({"data": {"user_id": user_id}, "message": "密码重置成功", "code": 200})
             else:
-                return jsonify({"error": "重置密码失败"}), 500
+                return jsonify({"data": None, "message": "重置密码失败", "code": 500}), 500
 
         @self.app.route("/admin/users/<int:user_id>/details", methods=["GET"])
         def admin_get_user_details(user_id):
             """获取用户详细信息（管理员）"""
             if not self.is_admin():
-                return jsonify({"error": "权限不足"}), 403
+                return jsonify({"success": False, "data": None, "message": "权限不足", "code": 403}), 403
 
             user = self.db.get_user_details(user_id)
             if user:
-                return jsonify(user)
+                return jsonify({"success": True, "data": user, "message": "获取用户详细信息成功", "code": 200})
             else:
-                return jsonify({"error": "用户不存在"}), 404
+                return jsonify({"success": False, "data": None, "message": "用户不存在", "code": 404}), 404
 
         @self.app.route("/admin/users/batch", methods=["POST"])
         def admin_batch_user_operation():
             """批量用户操作（管理员）"""
             if not self.is_admin():
-                return jsonify({"error": "权限不足"}), 403
+                return jsonify({"success": False, "data": None, "message": "权限不足", "code": 403}), 403
 
             data = request.get_json()
             operation = data.get("operation")
             user_ids = data.get("user_ids", [])
 
             if not user_ids:
-                return jsonify({"error": "请选择要操作的用户"}), 400
+                return jsonify({"success": False, "data": None, "message": "请选择要操作的用户", "code": 400}), 400
 
             # 检查是否包含当前用户
             current_user_id = session.get("user_id")
             if current_user_id in user_ids:
-                return jsonify({"error": "不能对自己执行批量操作"}), 400
+                return jsonify({"success": False, "data": None, "message": "不能对自己执行批量操作", "code": 400}), 400
 
             if operation == "delete":
                 if not self.is_super_admin():
-                    return jsonify({"error": "只有超级管理员可以批量删除用户"}), 403
+                    return jsonify({"success": False, "data": None, "message": "只有超级管理员可以批量删除用户", "code": 403}), 403
                 deleted_count = self.db.batch_delete_users(user_ids)
-                return jsonify({"success": True, "affected_count": deleted_count})
+                return jsonify({"success": True, "data": {"affected_count": deleted_count, "operation": "delete"}, "message": "批量删除用户成功", "code": 200})
 
             elif operation == "activate":
                 updated_count = self.db.batch_update_user_status(user_ids, True)
-                return jsonify({"success": True, "affected_count": updated_count})
+                return jsonify({"success": True, "data": {"affected_count": updated_count, "operation": "activate"}, "message": "批量激活用户成功", "code": 200})
 
             elif operation == "deactivate":
                 updated_count = self.db.batch_update_user_status(user_ids, False)
-                return jsonify({"success": True, "affected_count": updated_count})
+                return jsonify({"success": True, "data": {"affected_count": updated_count, "operation": "deactivate"}, "message": "批量禁用用户成功", "code": 200})
 
             else:
-                return jsonify({"error": "无效的操作"}), 400
+                return jsonify({"success": False, "data": None, "message": "无效的操作", "code": 400}), 400
 
         @self.app.route("/admin/stats", methods=["GET"])
         def admin_get_stats():
             """获取系统统计信息（管理员）"""
             if not self.is_admin():
-                return jsonify({"error": "权限不足"}), 403
+                return jsonify({"success": False, "data": None, "message": "权限不足", "code": 403}), 403
 
             stats = self.db.get_system_stats()
-            return jsonify(stats)
+            return jsonify({"success": True, "data": stats, "message": "获取系统统计信息成功", "code": 200})
 
         @self.app.route("/admin/config", methods=["GET"])
         def admin_get_configs():
             """获取所有配置文件列表（超级管理员）"""
             if not self.is_super_admin():
-                return jsonify({"error": "权限不足"}), 403
+                return jsonify({"success": False, "data": None, "message": "权限不足", "code": 403}), 403
 
             try:
                 import os
@@ -955,15 +1170,15 @@ class OpenManusWebUI:
                         if filename.endswith(('.toml', '.json')):
                             files.append(filename)
                 
-                return jsonify({"files": sorted(files)})
+                return jsonify({"success": True, "data": {"files": sorted(files)}, "message": "获取配置文件列表成功", "code": 200})
             except Exception as e:
-                return jsonify({"error": f"获取配置文件列表失败: {str(e)}"}), 500
+                return jsonify({"success": False, "data": None, "message": f"获取配置文件列表失败: {str(e)}", "code": 500}), 500
 
         @self.app.route("/admin/config/<filename>", methods=["GET"])
         def admin_get_config(filename):
             """获取配置文件内容（超级管理员）"""
             if not self.is_super_admin():
-                return jsonify({"error": "权限不足"}), 403
+                return jsonify({"success": False, "data": None, "message": "权限不足", "code": 403}), 403
 
             try:
                 import os
@@ -974,23 +1189,23 @@ class OpenManusWebUI:
                 if not os.path.abspath(config_file).startswith(
                     os.path.abspath(config_dir)
                 ):
-                    return jsonify({"error": "无效的文件路径"}), 400
+                    return jsonify({"success": False, "data": None, "message": "无效的文件路径", "code": 400}), 400
 
                 if not os.path.exists(config_file):
-                    return jsonify({"error": "配置文件不存在"}), 404
+                    return jsonify({"success": False, "data": None, "message": "配置文件不存在", "code": 404}), 404
 
                 with open(config_file, "r", encoding="utf-8") as f:
                     content = f.read()
 
-                return jsonify({"filename": filename, "content": content})
+                return jsonify({"success": True, "data": {"filename": filename, "content": content}, "message": "获取配置文件内容成功", "code": 200})
             except Exception as e:
-                return jsonify({"error": f"读取配置文件失败: {str(e)}"}), 500
+                return jsonify({"success": False, "data": None, "message": f"读取配置文件失败: {str(e)}", "code": 500}), 500
 
         @self.app.route("/admin/config/<filename>", methods=["PUT"])
         def admin_update_config(filename):
             """更新配置文件（超级管理员）"""
             if not self.is_super_admin():
-                return jsonify({"error": "权限不足"}), 403
+                return jsonify({"success": False, "data": None, "message": "权限不足", "code": 403}), 403
 
             try:
                 import os
@@ -1001,7 +1216,7 @@ class OpenManusWebUI:
                 if not os.path.abspath(config_file).startswith(
                     os.path.abspath(config_dir)
                 ):
-                    return jsonify({"error": "无效的文件路径"}), 400
+                    return jsonify({"success": False, "data": None, "message": "无效的文件路径", "code": 400}), 400
 
                 data = request.get_json()
 
@@ -1016,11 +1231,11 @@ class OpenManusWebUI:
                     with open(config_file, "w", encoding="utf-8") as f:
                         json.dump(content, f, indent=2, ensure_ascii=False)
                 else:
-                    return jsonify({"error": "不支持的文件格式"}), 400
+                    return jsonify({"success": False, "data": None, "message": "不支持的文件格式", "code": 400}), 400
 
-                return jsonify({"success": True})
+                return jsonify({"success": True, "data": {"filename": filename}, "message": "配置文件更新成功", "code": 200})
             except Exception as e:
-                return jsonify({"error": f"保存配置失败: {str(e)}"}), 500
+                return jsonify({"success": False, "data": None, "message": f"保存配置失败: {str(e)}", "code": 500}), 500
 
     def is_admin(self) -> bool:
         """检查当前用户是否为管理员或超级管理员"""
@@ -1072,6 +1287,68 @@ class OpenManusWebUI:
         except Exception as e:
             logger.error(f"Agent processing error: {e}")
             return f"处理您的请求时遇到错误：{str(e)}"
+
+    def process_with_agent_stream(self, message: str, conversation_id: str = None):
+        """Process user message with OpenManus agent and yield streaming response."""
+        try:
+            # Get or create agent instance for this session
+            session_id = session.get("user_id", "guest")
+            if session_id not in self.agent_instances:
+                # Create agent synchronously for streaming
+                import asyncio
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                self.agent_instances[session_id] = loop.run_until_complete(Manus.create())
+                loop.close()
+
+            agent = self.agent_instances[session_id]
+
+            # Load conversation history only if conversation_id is provided
+            if conversation_id:
+                messages = self.db.get_conversation_messages(conversation_id)
+
+                # Convert to OpenManus message format
+                agent.memory.clear()
+                for msg in messages[
+                    :-1
+                ]:  # Exclude the last message (current user input)
+                    agent.memory.add_message(
+                        Message(
+                            role=msg["role"],
+                            content=msg["content"],
+                            tool_calls=msg.get("tool_calls"),
+                            tool_call_id=msg.get("tool_call_id"),
+                        )
+                    )
+
+            # Process the message and yield chunks
+            # For now, we'll simulate streaming by processing the full response
+            # and then yielding it in chunks
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            # Run the agent
+            loop.run_until_complete(agent.run(message))
+            
+            # Get the last assistant message
+            last_message = agent.memory.get_messages()[-1]
+            response = last_message.content or "抱歉，我无法生成回复。"
+            
+            loop.close()
+            
+            # Simulate streaming by yielding the response in chunks
+            chunk_size = 10  # Characters per chunk
+            for i in range(0, len(response), chunk_size):
+                chunk = response[i:i + chunk_size]
+                yield chunk
+                # Add a small delay to simulate real streaming
+                import time
+                time.sleep(0.05)
+
+        except Exception as e:
+            logger.error(f"Agent streaming error: {e}")
+            yield f"处理您的请求时遇到错误：{str(e)}"
 
     def run(self, host="127.0.0.1", port=8080, debug=True):
         """Run the Flask application."""

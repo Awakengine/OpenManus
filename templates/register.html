@@ -125,7 +125,7 @@ $(document).ready(function() {
                 password: password
             }),
             success: function(response) {
-                if (response.success) {
+                if (response.code === 200) {
                     showAlert('账户创建成功！正在跳转到登录页面...', 'success');
                     
                     // Redirect to login after a short delay
@@ -133,7 +133,7 @@ $(document).ready(function() {
                         window.location.href = '{{ url_for("login") }}';
                     }, 2000);
                 } else {
-                    showAlert(response.error || '注册失败', 'danger');
+                    showAlert(response.message || '注册失败', 'danger');
                 }
             },
             error: function(xhr, status, error) {

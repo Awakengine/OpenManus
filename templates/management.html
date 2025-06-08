@@ -1,0 +1,1470 @@
+{% extends "base.html" %}
+
+{% block title %}管理设置 - OpenManus{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #3498db;
+        --accent-color: #e74c3c;
+        --success-color: #27ae60;
+        --warning-color: #f39c12;
+        --dark-color: #34495e;
+        --light-color: #ecf0f1;
+        --border-color: #bdc3c7;
+    }
+
+    body {
+        font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f8f9fa;
+        color: var(--dark-color);
+    }
+
+    .management-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .tabs {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+
+    .tab-buttons {
+        display: flex;
+        background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+        border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+        position: relative;
+    }
+
+    .tab-button {
+        flex: 1;
+        padding: 18px 25px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 600;
+        color: #6b7280;
+        transition: all 0.3s ease;
+        border-bottom: 3px solid transparent;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .tab-button:hover {
+        background: rgba(102, 126, 234, 0.05);
+        color: #4f46e5;
+        transform: translateY(-1px);
+    }
+
+    .tab-button.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-bottom-color: transparent;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .tab-content {
+        padding: 30px;
+        background: linear-gradient(135deg, #fafbff 0%, #f8f9ff 100%);
+        min-height: 400px;
+    }
+
+    .tab-pane {
+        display: none;
+    }
+
+    .tab-pane.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-transform: none;
+        letter-spacing: normal;
+    }
+
+    .btn:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4c93 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
+    }
+
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #ff5252 0%, #e53e3e 100%);
+        box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #ffa726 0%, #ff9800 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(255, 167, 38, 0.2);
+    }
+
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #ff9500 0%, #f57c00 100%);
+        box-shadow: 0 4px 12px rgba(255, 167, 38, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+    }
+
+    .btn-success:hover {
+        background: linear-gradient(135deg, #43a047 0%, #1b5e20 100%);
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .btn-outline-secondary {
+        border: 1px solid #6b7280;
+        color: #6b7280;
+        background: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        box-shadow: none;
+    }
+
+    .btn-outline-secondary:hover {
+        background: #6b7280;
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .btn-outline-info {
+        border: 1px solid #06b6d4;
+        color: #06b6d4;
+        background: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        box-shadow: none;
+    }
+
+    .btn-outline-info:hover {
+        background: #06b6d4;
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .btn-xs {
+        padding: 4px 8px !important;
+        font-size: 12px !important;
+        border-radius: 4px !important;
+    }
+
+    .config-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .config-selector {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: white;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .config-selector label {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .config-selector select {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .refresh-btn {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.2s;
+    }
+
+    .refresh-btn:hover {
+        background: #5a6fd8;
+    }
+
+    .config-editor {
+        background: white;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .config-file {
+        margin-bottom: 20px;
+    }
+
+    .config-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #eee;
+    }
+
+    .config-header h4 {
+        color: #333;
+        margin: 0;
+    }
+
+    .file-type {
+        color: #666;
+        font-size: 12px;
+        font-weight: normal;
+    }
+
+    .save-btn {
+        background: #2ed573;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.2s;
+    }
+
+    .save-btn:hover {
+        background: #26d467;
+    }
+
+    .config-textarea {
+        width: 100%;
+        min-height: 300px;
+        padding: 15px;
+        border: none;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        resize: vertical;
+        outline: none;
+    }
+
+    .config-textarea:focus {
+        outline: none;
+        box-shadow: inset 0 0 0 2px #667eea;
+    }
+
+    .form-control {
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 14px;
+        height: 32px;
+        transition: all 0.2s ease;
+        background-color: #ffffff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        outline: none;
+        background-color: #fafbff;
+    }
+
+    .form-control:hover {
+        border-color: #cbd5e0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        background: white;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+        border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+        border-radius: 12px 12px 0 0 !important;
+        padding: 20px 25px;
+    }
+
+    .card-body {
+        padding: 25px;
+    }
+
+    .alert {
+        padding: 12px 16px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .loading {
+        text-align: center;
+        color: #666;
+        padding: 20px;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: #999;
+        padding: 40px 20px;
+        font-style: italic;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-top: 25px;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+
+    .table th,
+    .table td {
+        padding: 16px 20px;
+        text-align: left;
+        border-bottom: 1px solid rgba(102, 126, 234, 0.08);
+    }
+
+    .table th {
+        background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+        font-weight: 700;
+        color: #4f46e5;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 13px;
+        position: relative;
+    }
+
+    .table th::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .table tbody tr {
+        transition: all 0.3s ease;
+    }
+
+    .table tbody tr:hover {
+        background: linear-gradient(135deg, #fafbff 0%, #f8f9ff 100%);
+        transform: scale(1.01);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+    }
+
+    .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .search-section {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+
+    .search-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .search-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 15px;
+        align-items: end;
+    }
+
+    .search-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .search-field .form-label {
+        font-weight: 600;
+        color: #4f46e5;
+        margin: 0;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+    }
+
+    .search-field .form-label i {
+        color: #667eea;
+    }
+
+    .search-actions {
+         display: flex;
+         gap: 8px;
+         justify-content: flex-end;
+         align-items: center;
+         padding-top: 8px;
+         margin-top: 5px;
+     }
+
+     .search-btn {
+         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+         border: none;
+         padding: 8px 16px;
+         border-radius: 6px;
+         font-weight: 500;
+         font-size: 14px;
+         transition: all 0.2s ease;
+         box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+         color: white;
+     }
+
+     .search-btn:hover {
+         transform: translateY(-1px);
+         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+     }
+
+     .reset-btn {
+         border: 1px solid #6b7280;
+         color: #6b7280;
+         background: white;
+         padding: 8px 16px;
+         border-radius: 6px;
+         font-weight: 500;
+         font-size: 14px;
+         transition: all 0.2s ease;
+     }
+
+     .reset-btn:hover {
+         background: #6b7280;
+         color: white;
+         transform: translateY(-1px);
+     }
+
+     .export-btn {
+         border: 1px solid #06b6d4;
+         color: #06b6d4;
+         background: white;
+         padding: 8px 16px;
+         border-radius: 6px;
+         font-weight: 500;
+         font-size: 14px;
+         transition: all 0.2s ease;
+     }
+
+     .export-btn:hover {
+         background: #06b6d4;
+         color: white;
+         transform: translateY(-1px);
+     }
+
+    @media (max-width: 1024px) {
+        .search-row {
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+    }
+
+    @media (max-width: 768px) {
+         .search-row {
+             grid-template-columns: 1fr;
+             gap: 15px;
+         }
+         
+         .search-actions {
+             justify-content: center;
+             flex-wrap: wrap;
+         }
+         
+         .search-actions button {
+             min-width: 80px;
+         }
+     }
+
+
+
+    .role-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .role-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .role-card.border-primary {
+        border-color: #667eea;
+    }
+
+    .role-card.border-warning {
+        border-color: #ffa726;
+    }
+
+    .role-card.border-danger {
+        border-color: #ff6b6b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="fas fa-cogs me-2"></i>管理设置</h2>
+
+            <div class="management-container">
+                <div class="tabs">
+                    <div class="tab-buttons">
+                        <button class="tab-button active" onclick="switchTab('profile')">
+                            <i class="fas fa-user me-2"></i>个人信息
+                        </button>
+                        {% if session.role in ['admin', 'super_admin', 'user_admin'] %}
+                        <button class="tab-button" onclick="switchTab('users')">
+                            <i class="fas fa-users me-2"></i>用户管理
+                        </button>
+                        {% endif %}
+                        {% if session.role in ['super_admin', 'role_admin'] %}
+                        <button class="tab-button" onclick="switchTab('roles')">
+                            <i class="fas fa-user-shield me-2"></i>角色管理
+                        </button>
+                        {% endif %}
+                        {% if session.role == 'super_admin' %}
+                        <button class="tab-button" onclick="switchTab('config')">
+                            <i class="fas fa-cogs me-2"></i>系统配置
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <div class="tab-content">
+                        <!-- 个人信息标签页 -->
+                        <div id="profile" class="tab-pane active">
+                            <!-- 基本信息修改 -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>基本信息</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="profileForm">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label for="username" class="form-label">用户名</label>
+                                                    <input type="text" class="form-control" id="username" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label for="nickname" class="form-label">昵称</label>
+                                                    <input type="text" class="form-control" id="nickname" placeholder="请输入昵称">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label for="email" class="form-label">邮箱 <span class="text-danger">*</span></label>
+                                                    <input type="email" class="form-control" id="email" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>保存基本信息
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- 密码修改 -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-lock me-2"></i>修改密码</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="passwordForm">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label for="oldPassword" class="form-label">当前密码 <span class="text-danger">*</span></label>
+                                                    <input type="password" class="form-control" id="oldPassword" required placeholder="请输入当前密码">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label for="newPassword" class="form-label">新密码 <span class="text-danger">*</span></label>
+                                                    <input type="password" class="form-control" id="newPassword" required placeholder="请输入新密码（至少6位）">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label for="confirmPassword" class="form-label">确认密码 <span class="text-danger">*</span></label>
+                                                    <input type="password" class="form-control" id="confirmPassword" required placeholder="请再次输入新密码">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-warning">
+                                            <i class="fas fa-key me-2"></i>修改密码
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if session.role in ['admin', 'super_admin', 'user_admin'] %}
+                        <!-- 用户管理标签页 -->
+                        <div id="users" class="tab-pane">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3>用户管理</h3>
+                                {% if session.role in ['super_admin', 'user_admin'] %}
+                                <button class="btn btn-success" onclick="showCreateUserModal()">
+                                    <i class="fas fa-plus me-1"></i>创建用户
+                                </button>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- 用户查询条件 -->
+                            <div class="search-section">
+                                <div class="search-container">
+                                    <div class="search-row">
+                                        <div class="search-field">
+                                            <label for="userSearchKeyword" class="form-label">
+                                                <i class="fas fa-search me-1"></i>关键词搜索
+                                            </label>
+                                            <input type="text" class="form-control" id="userSearchKeyword" placeholder="输入用户名或邮箱进行搜索...">
+                                        </div>
+                                        <div class="search-field">
+                                            <label for="userRoleFilter" class="form-label">
+                                                <i class="fas fa-user-tag me-1"></i>角色筛选
+                                            </label>
+                                            <select class="form-control" id="userRoleFilter">
+                                                <option value="">全部角色</option>
+                                                <option value="user">普通用户</option>
+                                                <option value="admin">管理员</option>
+                                                <option value="user_admin">用户管理员</option>
+                                                <option value="role_admin">角色管理员</option>
+                                                <option value="super_admin">超级管理员</option>
+                                            </select>
+                                        </div>
+                                        <div class="search-field">
+                                            <label for="userStatusFilter" class="form-label">
+                                                <i class="fas fa-toggle-on me-1"></i>状态筛选
+                                            </label>
+                                            <select class="form-control" id="userStatusFilter">
+                                                <option value="">全部状态</option>
+                                                <option value="active">启用</option>
+                                                <option value="disabled">禁用</option>
+                                            </select>
+                                        </div>
+                                        <div class="search-field">
+                                            <label for="userDateFilter" class="form-label">
+                                                <i class="fas fa-calendar me-1"></i>注册时间
+                                            </label>
+                                            <input type="date" class="form-control" id="userDateFilter">
+                                        </div>
+                                    </div>
+                                    <div class="search-actions">
+                                        <button class="btn btn-primary search-btn" onclick="searchUsers()">
+                                            <i class="fas fa-search me-1"></i>搜索
+                                        </button>
+                                        <button class="btn btn-outline-secondary reset-btn" onclick="resetUserSearch()">
+                                            <i class="fas fa-undo me-1"></i>重置
+                                        </button>
+                                        <button class="btn btn-outline-info export-btn" onclick="exportUsers()">
+                                            <i class="fas fa-download me-1"></i>导出
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="usersTable">
+                                    <thead>
+                                        <tr>
+                                            <th>用户名</th>
+                                            <th>邮箱</th>
+                                            <th>角色</th>
+                                            <th>状态</th>
+                                            <th>创建时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 用户数据将通过JavaScript加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if session.role in ['super_admin', 'role_admin'] %}
+                        <!-- 角色管理标签页 -->
+                        <div id="roles" class="tab-pane">
+                            <h3>角色管理</h3>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="role-card border-primary">
+                                        <i class="fas fa-user fa-3x text-primary mb-3"></i>
+                                        <h5>普通用户</h5>
+                                        <p class="text-muted">基本聊天功能</p>
+                                        <ul class="list-unstyled text-start">
+                                            <li><i class="fas fa-check text-success me-2"></i>使用聊天功能</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>查看对话历史</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>修改个人信息</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="role-card border-warning">
+                                        <i class="fas fa-user-tie fa-3x text-warning mb-3"></i>
+                                        <h5>管理员</h5>
+                                        <p class="text-muted">基础管理权限</p>
+                                        <ul class="list-unstyled text-start">
+                                            <li><i class="fas fa-check text-success me-2"></i>所有普通用户权限</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>查看用户列表</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>查看系统统计</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="role-card border-warning">
+                                        <i class="fas fa-users-cog fa-3x text-warning mb-3"></i>
+                                        <h5>用户管理员</h5>
+                                        <p class="text-muted">用户管理权限</p>
+                                        <ul class="list-unstyled text-start">
+                                            <li><i class="fas fa-check text-success me-2"></i>所有管理员权限</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>创建/删除用户</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>管理用户状态</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-4">
+                                <div class="col-md-4">
+                                    <div class="role-card border-warning">
+                                        <i class="fas fa-user-shield fa-3x text-warning mb-3"></i>
+                                        <h5>角色管理员</h5>
+                                        <p class="text-muted">角色管理权限</p>
+                                        <ul class="list-unstyled text-start">
+                                            <li><i class="fas fa-check text-success me-2"></i>所有管理员权限</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>查看角色信息</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>修改用户角色</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="role-card border-danger">
+                                        <i class="fas fa-crown fa-3x text-danger mb-3"></i>
+                                        <h5>超级管理员</h5>
+                                        <p class="text-muted">完全管理权限</p>
+                                        <ul class="list-unstyled text-start">
+                                            <li><i class="fas fa-check text-success me-2"></i>所有权限</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>系统配置管理</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>完全用户管理</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>角色权限管理</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if session.role == 'super_admin' %}
+                        <!-- 系统配置标签页 -->
+                        <div id="config" class="tab-pane">
+                            <h3>系统配置</h3>
+                            <div class="config-section">
+                                <div class="config-selector">
+                                    <label for="config-file-select">选择配置文件:</label>
+                                    <select id="config-file-select" onchange="loadSelectedConfig()">
+                                        <option value="">请选择配置文件...</option>
+                                    </select>
+                                    <button class="refresh-btn" onclick="refreshConfigList()">刷新列表</button>
+                                </div>
+                                <div class="config-editor" id="config-editor">
+                                    <div class="empty-state">请从上方下拉框中选择要编辑的配置文件</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建用户模态框 -->
+{% if session.role in ['super_admin', 'user_admin'] %}
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">创建新用户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createUserForm">
+                    <div class="mb-3">
+                        <label for="newUsername" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="newUsername" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newUserEmail" class="form-label">邮箱</label>
+                        <input type="email" class="form-control" id="newUserEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newUserPassword" class="form-label">密码</label>
+                        <input type="password" class="form-control" id="newUserPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newUserRole" class="form-label">角色</label>
+                        <select class="form-control" id="newUserRole" required>
+                            <option value="user">普通用户</option>
+                            {% if session.role == 'super_admin' %}
+                            <option value="admin">管理员</option>
+                            <option value="user_admin">用户管理员</option>
+                            <option value="role_admin">角色管理员</option>
+                            <option value="super_admin">超级管理员</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createUser()">创建</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 标签页切换功能
+    function switchTab(tabName) {
+        // 隐藏所有标签页内容
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('active');
+        });
+        
+        // 移除所有按钮的活跃状态
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active');
+        });
+        
+        // 显示选中的标签页
+        document.getElementById(tabName).classList.add('active');
+        
+        // 激活对应的按钮
+        event.target.classList.add('active');
+        
+        // 根据标签页加载相应数据
+        if (tabName === 'users') {
+            loadUsers();
+        } else if (tabName === 'config') {
+            loadConfigs();
+        }
+    }
+
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', function () {
+        loadUserProfile();
+        
+        // 保存基本信息
+        document.getElementById('profileForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const nickname = document.getElementById('nickname').value;
+
+            // 表单验证
+            if (!email) {
+                alert('邮箱不能为空');
+                return;
+            }
+
+            const formData = {
+                email: email,
+                nickname: nickname
+            };
+
+            fetch('/api/profile/basic', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络请求失败: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.code === 200) {
+                        alert('基本信息更新成功！');
+                    } else {
+                        alert('更新失败: ' + (data.message || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    console.error('更新失败:', error);
+                    alert('更新失败，请稍后重试');
+                });
+        });
+
+        // 修改密码
+        document.getElementById('passwordForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const oldPassword = document.getElementById('oldPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        // 表单验证
+        if (!oldPassword) {
+            alert('请输入当前密码');
+            return;
+        }
+
+        if (!newPassword) {
+            alert('请输入新密码');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            alert('新密码长度至少6位');
+            return;
+        }
+
+        if (!confirmPassword) {
+            alert('请确认新密码');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            alert('新密码与确认密码不一致');
+            return;
+        }
+
+        const formData = {
+            currentPassword: oldPassword,
+            newPassword: newPassword
+        };
+
+        fetch('/api/profile/password', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+            .then(response => {
+                return response.json().then(data => {
+                    if (!response.ok) {
+                        throw new Error(data.error || '网络请求失败: ' + response.status);
+                    }
+                    return data;
+                });
+            })
+            .then(data => {
+                if (data.code === 200) {
+                    alert('密码修改成功！请重新登录。');
+                    document.getElementById('oldPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                    
+                    // 如果后端返回logout标志，跳转到登录页面
+                    if (data.data && data.data.logout) {
+                        window.location.href = '/login';
+                    }
+                } else {
+                    alert('修改失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('修改失败:', error);
+                alert('修改失败: ' + error.message);
+            });
+        });
+    });
+
+    // 加载用户个人信息
+    function loadUserProfile() {
+        fetch('/api/profile')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code === 200) {
+                    document.getElementById('username').value = data.data.username;
+                    document.getElementById('email').value = data.data.email;
+                    document.getElementById('nickname').value = data.data.nickname || '';
+                } else {
+                    alert('加载用户信息失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('加载用户信息失败:', error);
+                alert('加载用户信息失败，请稍后重试');
+            });
+    }
+
+    {% if session.role in ['admin', 'super_admin', 'user_admin'] %}
+    // 加载用户列表
+    function loadUsers() {
+        fetch('/admin/users')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code !== 200) {
+                    alert('加载用户列表失败: ' + data.message);
+                    return;
+                }
+                
+                const users = Array.isArray(data.data) ? data.data : [];
+                const tbody = document.querySelector('#usersTable tbody');
+                tbody.innerHTML = '';
+
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    const canModifyRole = '{{ session.role }}' === 'super_admin' || '{{ session.role }}' === 'role_admin';
+                    const canModifyUser = '{{ session.role }}' === 'super_admin' || '{{ session.role }}' === 'user_admin';
+                    
+                    let roleSelect = '';
+                    if (canModifyRole) {
+                        roleSelect = `
+                            <select class="form-select form-select-sm" onchange="updateUserRole(${user.id}, this.value)">
+                                <option value="user" ${user.role === 'user' ? 'selected' : ''}>普通用户</option>
+                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>管理员</option>
+                                <option value="user_admin" ${user.role === 'user_admin' ? 'selected' : ''}>用户管理员</option>
+                                <option value="role_admin" ${user.role === 'role_admin' ? 'selected' : ''}>角色管理员</option>
+                                <option value="super_admin" ${user.role === 'super_admin' ? 'selected' : ''}>超级管理员</option>
+                            </select>
+                        `;
+                    } else {
+                        const roleNames = {
+                            'user': '普通用户',
+                            'admin': '管理员',
+                            'user_admin': '用户管理员',
+                            'role_admin': '角色管理员',
+                            'super_admin': '超级管理员'
+                        };
+                        roleSelect = roleNames[user.role] || user.role;
+                    }
+                    
+                    let actionButtons = '';
+                    if (canModifyUser) {
+                        actionButtons = `
+                            <button class="btn btn-xs ${user.is_active ? 'btn-warning' : 'btn-success'}"
+                                    onclick="toggleUserStatus(${user.id}, ${!user.is_active})"
+                                    style="padding: 4px 8px; font-size: 12px; margin-right: 4px;">
+                                ${user.is_active ? '禁用' : '启用'}
+                            </button>
+                            <button class="btn btn-xs btn-danger"
+                                    onclick="deleteUser(${user.id})"
+                                    style="padding: 4px 8px; font-size: 12px;">
+                                删除
+                            </button>
+                        `;
+                    }
+                    
+                    // 优先显示昵称，如果没有昵称则显示用户名
+                    const displayName = user.nickname || user.username;
+                    row.innerHTML = `
+                        <td>${displayName}</td>
+                        <td>${user.email}</td>
+                        <td>${roleSelect}</td>
+                        <td>
+                            <span class="badge ${user.is_active ? 'bg-success' : 'bg-secondary'}">
+                                ${user.is_active ? '活跃' : '禁用'}
+                            </span>
+                        </td>
+                        <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                        <td>${actionButtons}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('加载用户列表失败:', error);
+                alert('加载用户列表失败，请稍后重试');
+            });
+    }
+
+    // 搜索用户
+    function searchUsers() {
+        // 实现用户搜索逻辑
+        loadUsers(); // 暂时直接重新加载
+    }
+
+    // 重置用户搜索
+    function resetUserSearch() {
+        document.getElementById('userSearchKeyword').value = '';
+        document.getElementById('userRoleFilter').value = '';
+        document.getElementById('userStatusFilter').value = '';
+        document.getElementById('userDateFilter').value = '';
+        loadUsers();
+    }
+
+    {% if session.role in ['super_admin', 'user_admin'] %}
+    // 显示创建用户模态框
+    function showCreateUserModal() {
+        const modal = new bootstrap.Modal(document.getElementById('createUserModal'));
+        modal.show();
+    }
+
+    // 创建用户
+    function createUser() {
+        const formData = {
+            username: document.getElementById('newUsername').value,
+            email: document.getElementById('newUserEmail').value,
+            password: document.getElementById('newUserPassword').value,
+            role: document.getElementById('newUserRole').value
+        };
+
+        fetch('/admin/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    alert('用户创建成功！');
+                    bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
+                    document.getElementById('createUserForm').reset();
+                    loadUsers();
+                } else {
+                    alert('创建失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('创建用户失败:', error);
+                alert('创建失败，请稍后重试');
+            });
+    }
+    {% endif %}
+
+    {% if session.role in ['super_admin', 'role_admin'] %}
+    // 更新用户角色
+    function updateUserRole(userId, newRole) {
+        fetch(`/admin/users/${userId}/role`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ role: newRole })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code === 200) {
+                    alert('角色更新成功！');
+                } else {
+                    alert('更新失败: ' + (data.message || '未知错误'));
+                    loadUsers(); // 重新加载以恢复原状态
+                }
+            })
+            .catch(error => {
+                console.error('更新角色失败:', error);
+                alert('更新角色失败，请稍后重试');
+                loadUsers();
+            });
+    }
+    {% endif %}
+
+    {% if session.role in ['super_admin', 'user_admin'] %}
+    // 切换用户状态
+    function toggleUserStatus(userId, isActive) {
+        fetch(`/admin/users/${userId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ is_active: isActive })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code === 200) {
+                    alert(`用户已${isActive ? '启用' : '禁用'}！`);
+                    loadUsers();
+                } else {
+                    alert('操作失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('操作失败:', error);
+                alert('切换用户状态失败，请稍后重试');
+            });
+    }
+
+    // 删除用户
+    function deleteUser(userId) {
+        if (confirm('确定要删除该用户吗？此操作不可撤销！')) {
+            fetch(`/admin/users/${userId}`, {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络请求失败: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.code === 200) {
+                        alert('用户删除成功！');
+                        loadUsers();
+                    } else {
+                        alert('删除失败: ' + (data.message || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    console.error('删除失败:', error);
+                    alert('删除用户失败，请稍后重试');
+                });
+        }
+    }
+    {% endif %}
+    {% endif %}
+
+    {% if session.role == 'super_admin' %}
+    // 加载配置文件列表
+    function loadConfigs() {
+        fetch('/admin/config')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code !== 200) {
+                    document.getElementById('config-editor').innerHTML = `<div class="alert alert-error">${data.message}</div>`;
+                    alert('加载配置文件列表失败: ' + data.message);
+                    return;
+                }
+                
+                const select = document.getElementById('config-file-select');
+                select.innerHTML = '<option value="">请选择配置文件...</option>';
+                
+                data.data.files.forEach(filename => {
+                    const option = document.createElement('option');
+                    option.value = filename;
+                    option.textContent = filename;
+                    select.appendChild(option);
+                });
+                
+                document.getElementById('config-editor').innerHTML = '<div class="empty-state">请从上方下拉框中选择要编辑的配置文件</div>';
+            })
+            .catch(error => {
+                console.error('加载配置文件列表失败:', error);
+                document.getElementById('config-editor').innerHTML = '<div class="alert alert-error">加载配置文件列表失败</div>';
+                alert('加载配置文件列表失败，请稍后重试');
+            });
+    }
+
+    // 刷新配置文件列表
+    function refreshConfigList() {
+        loadConfigs();
+    }
+
+    // 加载选中的配置文件
+    function loadSelectedConfig() {
+        const filename = document.getElementById('config-file-select').value;
+        
+        if (!filename) {
+            document.getElementById('config-editor').innerHTML = '<div class="empty-state">请从上方下拉框中选择要编辑的配置文件</div>';
+            return;
+        }
+
+        fetch(`/admin/config/${filename}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code !== 200) {
+                    document.getElementById('config-editor').innerHTML = `<div class="alert alert-error">${data.message}</div>`;
+                    alert('加载配置文件失败: ' + data.message);
+                    return;
+                }
+
+                const editor = document.getElementById('config-editor');
+                const fileType = filename.split('.').pop();
+                
+                let content = data.data.content;
+                
+                // 如果是JSON文件，尝试格式化
+                if (fileType === 'json') {
+                    try {
+                        const parsed = JSON.parse(content);
+                        content = JSON.stringify(parsed, null, 2);
+                    } catch (e) {
+                        // 如果解析失败，保持原内容
+                    }
+                }
+
+                const configTitle = `${filename} <span class="file-type">(${fileType.toUpperCase()})</span>`;
+
+                editor.innerHTML = `
+                    <div class="config-file">
+                        <div class="config-header">
+                            <h4>${configTitle}</h4>
+                            <button class="save-btn" onclick="saveConfig('${filename}')">
+                                <i class="fas fa-save me-1"></i>保存配置
+                            </button>
+                        </div>
+                        <textarea class="config-textarea ${fileType === 'toml' ? 'config-toml-textarea' : ''}" 
+                                  id="config-content-${filename.replace(/[^a-zA-Z0-9]/g, '_')}">${content}</textarea>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                console.error('加载配置文件失败:', error);
+                document.getElementById('config-editor').innerHTML = '<div class="alert alert-error">加载配置文件失败</div>';
+                alert('加载配置文件失败，请稍后重试');
+            });
+    }
+
+    // 保存配置文件
+    function saveConfig(filename) {
+        const textareaId = `config-content-${filename.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        const content = document.getElementById(textareaId).value;
+        
+        fetch(`/admin/config/${filename}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ content: content })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code === 200) {
+                    alert('配置文件保存成功！');
+                } else {
+                    alert('保存失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('保存配置文件失败:', error);
+                alert('保存配置文件失败，请稍后重试');
+            });
+    }
+    {% endif %}
+</script>
+{% endblock %}

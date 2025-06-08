@@ -191,10 +191,10 @@ function sendMessage() {
         },
         success: function(response) {
             $('#loadingIndicator').hide();
-            if (response.success) {
-                addMessage('assistant', response.response);
-                if (response.conversation_id) {
-                    currentConversationId = response.conversation_id;
+            if (response.code === 200) {
+                addMessage('assistant', response.data.response);
+                if (response.data.conversation_id) {
+                    currentConversationId = response.data.conversation_id;
                     loadConversations();
                 }
             } else {
@@ -234,8 +234,8 @@ function loadConversations() {
         url: '/api/conversations',
         method: 'GET',
         success: function(response) {
-            if (response.success) {
-                conversations = response.conversations;
+            if (response.code === 200) {
+                conversations = response.data.conversations;
                 renderConversations();
                 enableChat();
             }
@@ -288,12 +288,12 @@ function loadMessages(convId) {
         url: `/api/conversations/${convId}/messages`,
         method: 'GET',
         success: function(response) {
-            if (response.success) {
+            if (response.code === 200) {
                 const messagesContainer = $('#chatMessages');
                 messagesContainer.empty();
                 $('#welcomeMessage').hide();
                 
-                response.messages.forEach(msg => {
+                response.data.messages.forEach(msg => {
                     addMessage(msg.role, msg.content);
                 });
             }
@@ -310,10 +310,10 @@ function createNewConversation(title) {
         method: 'POST',
         data: { title: title },
         success: function(response) {
-            if (response.success) {
+            if (response.code === 200) {
                 $('#newChatModal').modal('hide');
                 $('#chatTitleInput').val('');
-                currentConversationId = response.conversation_id;
+                currentConversationId = response.data.conversation_id;
                 $('#conversationTitle').text(title);
                 loadConversations();
                 

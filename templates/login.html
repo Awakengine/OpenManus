@@ -334,7 +334,7 @@
                     password: password
                 }),
                 success: function (response) {
-                    if (response.success) {
+                    if (response.code === 200) {
                         // Show success message
                         showAlert('登录成功！正在跳转...', 'success');
 
@@ -343,7 +343,7 @@
                             window.location.href = '{{ url_for("index") }}';
                         }, 1000);
                     } else {
-                        showAlert(response.error || '登录失败', 'danger');
+                        showAlert(response.message || '登录失败', 'danger');
                     }
                 },
                 error: function (xhr, status, error) {
