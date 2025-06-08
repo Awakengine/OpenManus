@@ -21,7 +21,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app.agent.manus import Manus
 from app.config import config
 from app.logger import logger
-from app.schema import Message, Role
+from app.schema import Message, Role, AgentState
 
 
 class DatabaseManager:
@@ -1766,6 +1766,10 @@ class OpenManusWebUI:
                 self.agent_instances[session_id] = await Manus.create()
 
             agent = self.agent_instances[session_id]
+            
+            # Reset agent state to IDLE before processing
+            agent.state = AgentState.IDLE
+            agent.current_step = 0
 
             # Load conversation history only if conversation_id is provided
             if conversation_id:
@@ -1813,6 +1817,10 @@ class OpenManusWebUI:
                 loop.close()
 
             agent = self.agent_instances[session_id]
+            
+            # Reset agent state to IDLE before processing
+            agent.state = AgentState.IDLE
+            agent.current_step = 0
 
             # Load conversation history only if conversation_id is provided
             if conversation_id:
