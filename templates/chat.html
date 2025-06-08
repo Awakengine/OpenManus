@@ -1593,8 +1593,14 @@ $(document).on('click', '.save-edit-btn', function() {
     // 移除编辑表单
     editForm.remove();
     
-    // 删除当前消息之后的所有消息（包括AI回复）
-    messageDiv.nextAll('.message').remove();
+    // 清除所有对话消息
+    $('#chatMessages').empty();
+    
+    // 显示欢迎消息
+    $('#welcomeMessage').show();
+    
+    // 添加编辑后的用户消息
+    addMessage('user', newContent);
     
     // 重新发送消息
     if (currentConversationId || isGuest) {
