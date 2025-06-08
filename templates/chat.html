@@ -819,6 +819,7 @@ let currentConversationId = null;
 let conversations = [];
 let isGuest = false;
 let pendingMessage = '';
+let conversationStates = {}; // 存储每个对话的独立状态
 
 // 顶部提示框功能
 function showTips(message, type = 'info', duration = 3000) {
@@ -972,6 +973,56 @@ function clearConversationState() {
         localStorage.removeItem('activeConversationState');
     } catch (e) {
         console.error('Failed to clear conversation state:', e);
+    }
+}
+
+// 保存当前对话的状态
+function saveCurrentConversationState() {
+    if (!currentConversationId) return;
+    
+    const state = {
+        conversationId: currentConversationId,
+        thinkingSteps: {},
+        timestamp: Date.now()
+    };
+    
+    // 保存思考步骤的展开/折叠状态
+    $('.thinking-container').each(function() {
+        const stepId = $(this).data('step-id') || $(this).index();
+        const content = $(this).find('.thinking-content');
+        state.thinkingSteps[stepId] = {
+            expanded: content.is(':visible')
+        };
+    });
+    
+    conversationStates[currentConversationId] = state;
+}
+
+// 恢复特定对话的状态
+function restoreSpecificConversationState(convId) {
+    if (!convId) return;
+    
+    const state = conversationStates[convId];
+    if (state) {
+        // 恢复思考步骤显示状态
+        setTimeout(() => {
+            $('.thinking-container').each(function() {
+                const stepId = $(this).data('step-id') || $(this).index();
+                if (state.thinkingSteps && state.thinkingSteps[stepId]) {
+                    const stepState = state.thinkingSteps[stepId];
+                    const content = $(this).find('.thinking-content');
+                    const toggle = $(this).find('.thinking-toggle');
+                    
+                    if (stepState.expanded) {
+                        content.show();
+                        toggle.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                    } else {
+                        content.hide();
+                        toggle.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                    }
+                }
+            });
+        }, 100);
     }
 }
 
@@ -1518,8 +1569,9 @@ function processThinkingTags(content) {
             const escapedThinking = combinedThinking.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
             
             // 创建可折叠的HTML结构
+            const stepId = `step_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             const thinkingHtml = `
-                <div class="thinking-container">
+                <div class="thinking-container" data-step-id="${stepId}">
                     <div class="thinking-header" onclick="toggleThinking(this)">
                         <i class="fas fa-brain thinking-icon"></i>
                         <span class="thinking-title">思考过程</span>
@@ -1566,6 +1618,11 @@ function toggleThinking(header) {
         content.slideDown(200);
         toggle.removeClass('fa-chevron-down').addClass('fa-chevron-up');
     }
+    
+    // 保存当前对话的状态
+    setTimeout(() => {
+        saveCurrentConversationState();
+    }, 250);
 }
 
 function loadConversations() {
@@ -1634,11 +1691,19 @@ function renderConversations() {
 }
 
 function selectConversation(convId) {
+    // 保存当前对话的状态
+    if (currentConversationId && currentConversationId !== convId) {
+        saveCurrentConversationState();
+    }
+    
     currentConversationId = convId;
     const conv = conversations.find(c => c.id === convId);
     if (conv) {
         $('#conversationTitle').text(conv.title);
         loadMessages(convId);
+        
+        // 恢复目标对话的状态
+        restoreSpecificConversationState(convId);
     }
     renderConversations();
 }
@@ -1656,6 +1721,11 @@ function loadMessages(convId) {
                 response.data.messages.forEach(msg => {
                     addMessage(msg.role, msg.content);
                 });
+                
+                // 消息加载完成后恢复对话状态
+                setTimeout(() => {
+                    restoreSpecificConversationState(convId);
+                }, 200);
             }
         },
         error: function() {
@@ -1680,6 +1750,9 @@ function deleteConversation(convId) {
                     $('#chatMessages').empty();
                     $('#welcomeMessage').show();
                 }
+                
+                // 清理对话状态
+                delete conversationStates[convId];
                 
                 // 重新渲染对话列表
                 renderConversations();

@@ -903,6 +903,7 @@ class OpenManusWebUI:
         self.app.secret_key = "openmanus-webui-secret-key-change-in-production"
         self.db = DatabaseManager()
         self.agent_instances = {}  # 存储每个会话的代理实例
+        self.conversation_agents = {}  # 存储每个对话的独立代理实例
 
         self.setup_routes()
 
@@ -1803,12 +1804,14 @@ class OpenManusWebUI:
     ) -> str:
         """Process user message with OpenManus agent."""
         try:
-            # Get or create agent instance for this session
+            # Get or create agent instance for this conversation
             session_id = session.get("user_id", "guest")
-            if session_id not in self.agent_instances:
-                self.agent_instances[session_id] = await Manus.create()
+            agent_key = conversation_id if conversation_id else f"session_{session_id}"
+            
+            if agent_key not in self.conversation_agents:
+                self.conversation_agents[agent_key] = await Manus.create()
 
-            agent = self.agent_instances[session_id]
+            agent = self.conversation_agents[agent_key]
             
             # Reset agent state to IDLE before processing
             agent.state = AgentState.IDLE
@@ -1853,16 +1856,19 @@ class OpenManusWebUI:
             if session_id is None:
                 session_id = "guest"
             
-            # Get or create agent instance for this session
-            if session_id not in self.agent_instances:
+            # Use conversation_id as the key for agent instances to ensure each conversation has its own agent
+            agent_key = conversation_id if conversation_id else f"session_{session_id}"
+            
+            # Get or create agent instance for this conversation
+            if agent_key not in self.conversation_agents:
                 # Create agent synchronously for streaming
                 import asyncio
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-                self.agent_instances[session_id] = loop.run_until_complete(Manus.create())
+                self.conversation_agents[agent_key] = loop.run_until_complete(Manus.create())
                 loop.close()
 
-            agent = self.agent_instances[session_id]
+            agent = self.conversation_agents[agent_key]
             
             # Reset agent state to IDLE before processing
             agent.state = AgentState.IDLE
