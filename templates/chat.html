@@ -559,7 +559,7 @@ function renderConversations() {
         const convHtml = `
             <div class="conversation-item ${isActive ? 'active' : ''}" data-id="${conv.id}">
                 <div class="conversation-title">${conv.title}</div>
-                <div class="conversation-time">${new Date(conv.created_at).toLocaleDateString()}</div>
+                <div class="conversation-time">${conv.created_at || 'N/A'}</div>
             </div>
         `;
         container.append(convHtml);

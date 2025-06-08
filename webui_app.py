@@ -45,9 +45,14 @@ class DatabaseManager:
                     email TEXT UNIQUE NOT NULL,
                     password_hash TEXT NOT NULL,
                     role TEXT DEFAULT 'user',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    last_login TIMESTAMP,
-                    is_active BOOLEAN DEFAULT 1
+                    created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+                    last_login DATETIME,
+                    is_active BOOLEAN DEFAULT 1,
+                    created_by INTEGER,
+                    updated_by INTEGER,
+                    updated_at DATETIME,
+                    FOREIGN KEY (created_by) REFERENCES users(id),
+                    FOREIGN KEY (updated_by) REFERENCES users(id)
                 )
             """
             )
@@ -63,6 +68,30 @@ class DatabaseManager:
             # 如果昵称列不存在则添加（用于现有数据库）
             try:
                 cursor.execute("ALTER TABLE users ADD COLUMN nickname TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                # 列已存在
+                pass
+
+            # 如果创建人ID列不存在则添加（用于现有数据库）
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN created_by INTEGER")
+                conn.commit()
+            except sqlite3.OperationalError:
+                # 列已存在
+                pass
+
+            # 如果修改人ID列不存在则添加（用于现有数据库）
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN updated_by INTEGER")
+                conn.commit()
+            except sqlite3.OperationalError:
+                # 列已存在
+                pass
+
+            # 如果修改时间列不存在则添加（用于现有数据库）
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN updated_at DATETIME")
                 conn.commit()
             except sqlite3.OperationalError:
                 # 列已存在
@@ -146,8 +175,8 @@ class DatabaseManager:
                     id TEXT PRIMARY KEY,
                     user_id INTEGER NOT NULL,
                     title TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+                    updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
                     FOREIGN KEY (user_id) REFERENCES users (id)
                 )
             """
@@ -163,7 +192,7 @@ class DatabaseManager:
                     content TEXT NOT NULL,
                     tool_calls TEXT,
                     tool_call_id TEXT,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    timestamp DATETIME DEFAULT (datetime('now', 'localtime')),
                     FOREIGN KEY (conversation_id) REFERENCES conversations (id)
                 )
             """
@@ -180,6 +209,13 @@ class DatabaseManager:
                 cursor.execute(
                     "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
                     (username, email, password_hash),
+                )
+                # 获取新创建用户的ID
+                user_id = cursor.lastrowid
+                # 设置创建人为自己
+                cursor.execute(
+                    "UPDATE users SET created_by = ? WHERE id = ?",
+                    (user_id, user_id),
                 )
                 conn.commit()
                 return True
@@ -199,7 +235,7 @@ class DatabaseManager:
             if user and check_password_hash(user[3], password):
                 # 更新最后登录时间
                 cursor.execute(
-                    "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
+                    "UPDATE users SET last_login = datetime('now', 'localtime') WHERE id = ?",
                     (user[0],),
                 )
                 conn.commit()
@@ -229,7 +265,7 @@ class DatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT id, title, created_at, updated_at FROM conversations WHERE user_id = ? ORDER BY updated_at DESC",
+                "SELECT id, title, strftime('%Y-%m-%d %H:%M:%S', created_at) as created_at, strftime('%Y-%m-%d %H:%M:%S', updated_at) as updated_at FROM conversations WHERE user_id = ? ORDER BY updated_at DESC",
                 (user_id,),
             )
             conversations = cursor.fetchall()
@@ -262,7 +298,7 @@ class DatabaseManager:
 
             # 更新对话时间戳
             cursor.execute(
-                "UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                "UPDATE conversations SET updated_at = datetime('now', 'localtime') WHERE id = ?",
                 (conversation_id,),
             )
             conn.commit()
@@ -272,7 +308,7 @@ class DatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT role, content, tool_calls, tool_call_id, timestamp FROM messages WHERE conversation_id = ? ORDER BY timestamp",
+                "SELECT role, content, tool_calls, tool_call_id, strftime('%Y-%m-%d %H:%M:%S', timestamp) as timestamp FROM messages WHERE conversation_id = ? ORDER BY timestamp",
                 (conversation_id,),
             )
             messages = cursor.fetchall()
@@ -288,13 +324,51 @@ class DatabaseManager:
                 for msg in messages
             ]
 
-    def get_all_users(self) -> List[Dict]:
-        """获取所有用户（仅管理员）。"""
+    def get_all_users(self, keyword=None, role=None, status=None, date=None) -> List[Dict]:
+        """获取所有用户（仅管理员），支持搜索过滤。"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT id, username, email, role, created_at, last_login, is_active, nickname FROM users ORDER BY created_at DESC"
-            )
+            
+            # 构建基础查询
+            query = """SELECT u.id, u.username, u.email, u.role, 
+                       strftime('%Y-%m-%d %H:%M:%S', u.created_at) as created_at, 
+                       strftime('%Y-%m-%d %H:%M:%S', u.last_login) as last_login, 
+                       u.is_active, u.nickname, u.created_by, u.updated_by,
+                       strftime('%Y-%m-%d %H:%M:%S', u.updated_at) as updated_at,
+                       c.username as created_by_name, up.username as updated_by_name
+                       FROM users u 
+                       LEFT JOIN users c ON u.created_by = c.id
+                       LEFT JOIN users up ON u.updated_by = up.id"""
+            conditions = []
+            params = []
+            
+            # 添加搜索条件
+            if keyword:
+                conditions.append("(u.username LIKE ? OR u.email LIKE ? OR u.nickname LIKE ?)")
+                keyword_param = f"%{keyword}%"
+                params.extend([keyword_param, keyword_param, keyword_param])
+            
+            if role:
+                conditions.append("u.role = ?")
+                params.append(role)
+            
+            if status:
+                if status == 'active':
+                    conditions.append("u.is_active = 1")
+                elif status == 'disabled':
+                    conditions.append("u.is_active = 0")
+            
+            if date:
+                conditions.append("DATE(u.created_at) = ?")
+                params.append(date)
+            
+            # 组合查询条件
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+            
+            query += " ORDER BY created_at DESC"
+            
+            cursor.execute(query, params)
             users = cursor.fetchall()
 
             return [
@@ -307,30 +381,37 @@ class DatabaseManager:
                     "last_login": user[5],
                     "is_active": bool(user[6]),
                     "nickname": user[7],
+                    "created_by": user[8],
+                    "updated_by": user[9],
+                    "updated_at": user[10],
+                    "created_by_name": user[11],
+                    "updated_by_name": user[12],
                 }
                 for user in users
             ]
 
-    def update_user_role(self, user_id: int, role: str) -> bool:
+    def update_user_role(self, user_id: int, role: str, updated_by: int = None) -> bool:
         """更新用户角色（仅管理员）。"""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "UPDATE users SET role = ? WHERE id = ?", (role, user_id)
+                    "UPDATE users SET role = ?, updated_by = ?, updated_at = datetime('now', 'localtime') WHERE id = ?", 
+                    (role, updated_by, user_id)
                 )
                 conn.commit()
                 return cursor.rowcount > 0
         except Exception:
             return False
 
-    def update_user_status(self, user_id: int, is_active: bool) -> bool:
+    def update_user_status(self, user_id: int, is_active: bool, updated_by: int = None) -> bool:
         """更新用户活跃状态（仅管理员）。"""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "UPDATE users SET is_active = ? WHERE id = ?", (is_active, user_id)
+                    "UPDATE users SET is_active = ?, updated_by = ?, updated_at = datetime('now', 'localtime') WHERE id = ?", 
+                    (is_active, updated_by, user_id)
                 )
                 conn.commit()
                 return cursor.rowcount > 0
@@ -369,7 +450,7 @@ class DatabaseManager:
             return False
 
     def create_user_with_role(
-        self, username: str, email: str, password: str, role: str = "user"
+        self, username: str, email: str, password: str, role: str = "user", created_by: int = None
     ) -> bool:
         """创建带有指定角色的新用户账户。"""
         try:
@@ -377,23 +458,23 @@ class DatabaseManager:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)",
-                    (username, email, password_hash, role),
+                    "INSERT INTO users (username, email, password_hash, role, created_by) VALUES (?, ?, ?, ?, ?)",
+                    (username, email, password_hash, role, created_by),
                 )
                 conn.commit()
                 return True
         except sqlite3.IntegrityError:
             return False
 
-    def reset_user_password(self, user_id: int, new_password: str) -> bool:
+    def reset_user_password(self, user_id: int, new_password: str, updated_by: int = None) -> bool:
         """重置用户密码。"""
         try:
             password_hash = generate_password_hash(new_password)
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "UPDATE users SET password_hash = ? WHERE id = ?",
-                    (password_hash, user_id),
+                    "UPDATE users SET password_hash = ?, updated_by = ?, updated_at = datetime('now', 'localtime') WHERE id = ?",
+                    (password_hash, updated_by, user_id),
                 )
                 conn.commit()
                 return cursor.rowcount > 0
@@ -405,7 +486,7 @@ class DatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT id, username, email, password_hash, role, created_at, last_login, is_active, nickname FROM users WHERE id = ?",
+                "SELECT id, username, email, password_hash, role, strftime('%Y-%m-%d %H:%M:%S', created_at) as created_at, strftime('%Y-%m-%d %H:%M:%S', last_login) as last_login, is_active, nickname FROM users WHERE id = ?",
                 (user_id,),
             )
             user = cursor.fetchone()
@@ -483,7 +564,7 @@ class DatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                """SELECT id, username, email, role, created_at, last_login, is_active, nickname,
+                """SELECT id, username, email, role, strftime('%Y-%m-%d %H:%M:%S', created_at) as created_at, strftime('%Y-%m-%d %H:%M:%S', last_login) as last_login, is_active, nickname,
                    (SELECT COUNT(*) FROM conversations WHERE user_id = ?) as conversation_count,
                    (SELECT COUNT(*) FROM messages WHERE conversation_id IN
                     (SELECT id FROM conversations WHERE user_id = ?)) as message_count
@@ -515,15 +596,15 @@ class DatabaseManager:
                 success_count += 1
         return success_count
 
-    def batch_update_user_status(self, user_ids: List[int], is_active: bool) -> int:
+    def batch_update_user_status(self, user_ids: List[int], is_active: bool, updated_by: int = None) -> int:
         """批量更新用户状态。"""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 placeholders = ",".join("?" * len(user_ids))
                 cursor.execute(
-                    f"UPDATE users SET is_active = ? WHERE id IN ({placeholders})",
-                    [is_active] + user_ids,
+                    f"UPDATE users SET is_active = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN ({placeholders})",
+                    [is_active, updated_by] + user_ids,
                 )
                 conn.commit()
                 return cursor.rowcount
@@ -1001,12 +1082,123 @@ class OpenManusWebUI:
 
         @self.app.route("/admin/users", methods=["GET"])
         def admin_get_users():
-            """获取所有用户（管理员）"""
+            """获取所有用户（管理员），支持搜索过滤"""
             if not self.is_admin():
                 return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
 
-            users = self.db.get_all_users()
+            # 获取查询参数
+            keyword = request.args.get('keyword')
+            role = request.args.get('role')
+            status = request.args.get('status')
+            date = request.args.get('date')
+
+            users = self.db.get_all_users(keyword=keyword, role=role, status=status, date=date)
             return jsonify({"data": users, "message": "获取用户列表成功", "code": 200})
+
+        @self.app.route("/admin/users/export", methods=["GET"])
+        def admin_export_users():
+            """导出用户数据（管理员）"""
+            if not self.is_admin():
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
+
+            # 获取查询参数
+            keyword = request.args.get('keyword')
+            role = request.args.get('role')
+            status = request.args.get('status')
+            date = request.args.get('date')
+
+            users = self.db.get_all_users(keyword=keyword, role=role, status=status, date=date)
+            
+            # 生成CSV内容
+            import csv
+            import io
+            
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # 写入表头
+            writer.writerow(['用户名', '昵称', '邮箱', '角色', '状态', '创建时间'])
+            
+            # 写入数据
+            for user in users:
+                writer.writerow([
+                    user['username'],
+                    user['nickname'] or '',
+                    user['email'],
+                    user['role'],
+                    '激活' if user['is_active'] else '禁用',
+                    user['created_at']
+                ])
+            
+            output.seek(0)
+            
+            # 返回CSV文件
+            return Response(
+                output.getvalue(),
+                mimetype='text/csv',
+                headers={"Content-disposition": "attachment; filename=users.csv"}
+            )
+
+        @self.app.route("/admin/users/import", methods=["POST"])
+        def admin_import_users():
+            """导入用户数据（管理员）"""
+            if not self.is_admin():
+                return jsonify({"data": None, "message": "权限不足", "code": 403}), 403
+
+            if 'file' not in request.files:
+                return jsonify({"data": None, "message": "未选择文件", "code": 400}), 400
+
+            file = request.files['file']
+            if file.filename == '':
+                return jsonify({"data": None, "message": "未选择文件", "code": 400}), 400
+
+            try:
+                import csv
+                import io
+                
+                # 读取文件内容
+                stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+                csv_input = csv.reader(stream)
+                
+                # 跳过表头
+                next(csv_input)
+                
+                imported = 0
+                skipped = 0
+                
+                for row in csv_input:
+                    if len(row) < 3:  # 至少需要用户名、邮箱、角色
+                        continue
+                        
+                    username = row[0].strip()
+                    nickname = row[1].strip() if len(row) > 1 else ''
+                    email = row[2].strip()
+                    role = row[3].strip() if len(row) > 3 else 'user'
+                    
+                    # 检查用户是否已存在
+                    if self.db.get_user_by_username(username) or self.db.get_user_by_email(email):
+                        skipped += 1
+                        continue
+                    
+                    # 生成默认密码
+                    default_password = '123456'
+                    password_hash = generate_password_hash(default_password)
+                    
+                    # 创建用户
+                    if self.db.create_user(username, email, password_hash, nickname, role):
+                        imported += 1
+                    else:
+                        skipped += 1
+                
+                return jsonify({
+                    "data": {"imported": imported, "skipped": skipped}, 
+                    "message": "导入完成", 
+                    "code": 200
+                })
+                
+            except Exception as e:
+                logger.error(f"导入用户失败: {e}")
+                return jsonify({"data": None, "message": f"导入失败: {str(e)}", "code": 500}), 500
 
         @self.app.route("/admin/users/<int:user_id>/role", methods=["PUT"])
         def admin_update_user_role(user_id):
@@ -1020,7 +1212,8 @@ class OpenManusWebUI:
             if role not in ["user", "admin", "super_admin"]:
                 return jsonify({"data": None, "message": "无效的角色", "code": 400}), 400
 
-            if self.db.update_user_role(user_id, role):
+            current_user_id = session.get('user_id')
+            if self.db.update_user_role(user_id, role, current_user_id):
                 return jsonify({"data": {"user_id": user_id, "role": role}, "message": "角色更新成功", "code": 200})
             else:
                 return jsonify({"data": None, "message": "更新失败", "code": 500}), 500
@@ -1034,7 +1227,8 @@ class OpenManusWebUI:
             data = request.get_json()
             is_active = data.get("is_active")
 
-            if self.db.update_user_status(user_id, is_active):
+            current_user_id = session.get('user_id')
+            if self.db.update_user_status(user_id, is_active, current_user_id):
                 return jsonify({"data": {"user_id": user_id, "is_active": is_active}, "message": "用户状态更新成功", "code": 200})
             else:
                 return jsonify({"data": None, "message": "更新失败", "code": 500}), 500
@@ -1076,7 +1270,8 @@ class OpenManusWebUI:
             if role in ["admin", "super_admin"] and not self.is_super_admin():
                 return jsonify({"data": None, "message": "权限不足，无法创建管理员用户", "code": 403}), 403
 
-            if self.db.create_user_with_role(username, email, password, role):
+            current_user_id = session.get('user_id')
+            if self.db.create_user_with_role(username, email, password, role, current_user_id):
                 return jsonify({"data": {"username": username, "email": email, "role": role}, "message": "用户创建成功", "code": 200})
             else:
                 return jsonify({"data": None, "message": "创建用户失败，用户名或邮箱可能已存在", "code": 400}), 400
@@ -1093,7 +1288,8 @@ class OpenManusWebUI:
             if not new_password:
                 return jsonify({"data": None, "message": "新密码不能为空", "code": 400}), 400
 
-            if self.db.reset_user_password(user_id, new_password):
+            current_user_id = session.get('user_id')
+            if self.db.reset_user_password(user_id, new_password, current_user_id):
                 return jsonify({"data": {"user_id": user_id}, "message": "密码重置成功", "code": 200})
             else:
                 return jsonify({"data": None, "message": "重置密码失败", "code": 500}), 500
@@ -1135,11 +1331,13 @@ class OpenManusWebUI:
                 return jsonify({"success": True, "data": {"affected_count": deleted_count, "operation": "delete"}, "message": "批量删除用户成功", "code": 200})
 
             elif operation == "activate":
-                updated_count = self.db.batch_update_user_status(user_ids, True)
+                current_user_id = session.get('user_id')
+                updated_count = self.db.batch_update_user_status(user_ids, True, current_user_id)
                 return jsonify({"success": True, "data": {"affected_count": updated_count, "operation": "activate"}, "message": "批量激活用户成功", "code": 200})
 
             elif operation == "deactivate":
-                updated_count = self.db.batch_update_user_status(user_ids, False)
+                current_user_id = session.get('user_id')
+                updated_count = self.db.batch_update_user_status(user_ids, False, current_user_id)
                 return jsonify({"success": True, "data": {"affected_count": updated_count, "operation": "deactivate"}, "message": "批量禁用用户成功", "code": 200})
 
             else:

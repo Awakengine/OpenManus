@@ -540,6 +540,23 @@
          transform: translateY(-1px);
      }
 
+     .import-btn {
+         border: 1px solid #10b981;
+         color: #10b981;
+         background: white;
+         padding: 8px 16px;
+         border-radius: 6px;
+         font-weight: 500;
+         font-size: 14px;
+         transition: all 0.2s ease;
+     }
+
+     .import-btn:hover {
+         background: #10b981;
+         color: white;
+         transform: translateY(-1px);
+     }
+
     @media (max-width: 1024px) {
         .search-row {
             grid-template-columns: 1fr 1fr;
@@ -757,6 +774,10 @@
                                         <button class="btn btn-outline-info export-btn" onclick="exportUsers()">
                                             <i class="fas fa-download me-1"></i>导出
                                         </button>
+                                        <button class="btn btn-outline-success import-btn" onclick="document.getElementById('importFile').click()">
+                                            <i class="fas fa-upload me-1"></i>导入
+                                        </button>
+                                        <input type="file" id="importFile" accept=".csv,.xlsx,.json" style="display: none;" onchange="importUsers(this)">
                                     </div>
                                 </div>
                             </div>
@@ -766,6 +787,7 @@
                                     <thead>
                                         <tr>
                                             <th>用户名</th>
+                                            <th>昵称</th>
                                             <th>邮箱</th>
                                             <th>角色</th>
                                             <th>状态</th>
@@ -1164,10 +1186,9 @@
                         `;
                     }
                     
-                    // 优先显示昵称，如果没有昵称则显示用户名
-                    const displayName = user.nickname || user.username;
                     row.innerHTML = `
-                        <td>${displayName}</td>
+                        <td>${user.username}</td>
+                        <td>${user.nickname || '-'}</td>
                         <td>${user.email}</td>
                         <td>${roleSelect}</td>
                         <td>
@@ -1175,7 +1196,7 @@
                                 ${user.is_active ? '活跃' : '禁用'}
                             </span>
                         </td>
-                        <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                        <td>${user.created_at || 'N/A'}</td>
                         <td>${actionButtons}</td>
                     `;
                     tbody.appendChild(row);
@@ -1189,8 +1210,102 @@
 
     // 搜索用户
     function searchUsers() {
-        // 实现用户搜索逻辑
-        loadUsers(); // 暂时直接重新加载
+        // 获取搜索条件
+        const keyword = document.getElementById('userSearchKeyword').value.trim();
+        const role = document.getElementById('userRoleFilter').value;
+        const status = document.getElementById('userStatusFilter').value;
+        const date = document.getElementById('userDateFilter').value;
+        
+        // 构建查询参数
+        const params = new URLSearchParams();
+        if (keyword) params.append('keyword', keyword);
+        if (role) params.append('role', role);
+        if (status) params.append('status', status);
+        if (date) params.append('date', date);
+        
+        // 发送搜索请求
+        const url = '/admin/users' + (params.toString() ? '?' + params.toString() : '');
+        
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code !== 200) {
+                    alert('搜索用户失败: ' + data.message);
+                    return;
+                }
+                
+                const users = Array.isArray(data.data) ? data.data : [];
+                const tbody = document.querySelector('#usersTable tbody');
+                tbody.innerHTML = '';
+
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    const canModifyRole = '{{ session.role }}' === 'super_admin' || '{{ session.role }}' === 'role_admin';
+                    const canModifyUser = '{{ session.role }}' === 'super_admin' || '{{ session.role }}' === 'user_admin';
+                    
+                    let roleSelect = '';
+                    if (canModifyRole) {
+                        roleSelect = `
+                            <select class="form-select form-select-sm" onchange="updateUserRole(${user.id}, this.value)">
+                                <option value="user" ${user.role === 'user' ? 'selected' : ''}>普通用户</option>
+                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>管理员</option>
+                                <option value="user_admin" ${user.role === 'user_admin' ? 'selected' : ''}>用户管理员</option>
+                                <option value="role_admin" ${user.role === 'role_admin' ? 'selected' : ''}>角色管理员</option>
+                                <option value="super_admin" ${user.role === 'super_admin' ? 'selected' : ''}>超级管理员</option>
+                            </select>
+                        `;
+                    } else {
+                        const roleNames = {
+                            'user': '普通用户',
+                            'admin': '管理员',
+                            'user_admin': '用户管理员',
+                            'role_admin': '角色管理员',
+                            'super_admin': '超级管理员'
+                        };
+                        roleSelect = roleNames[user.role] || user.role;
+                    }
+                    
+                    let actionButtons = '';
+                    if (canModifyUser) {
+                        actionButtons = `
+                            <button class="btn btn-xs ${user.is_active ? 'btn-warning' : 'btn-success'}"
+                                    onclick="toggleUserStatus(${user.id}, ${!user.is_active})"
+                                    style="padding: 4px 8px; font-size: 12px; margin-right: 4px;">
+                                ${user.is_active ? '禁用' : '启用'}
+                            </button>
+                            <button class="btn btn-xs btn-danger"
+                                    onclick="deleteUser(${user.id})"
+                                    style="padding: 4px 8px; font-size: 12px;">
+                                删除
+                            </button>
+                        `;
+                    }
+                    
+                    row.innerHTML = `
+                        <td>${user.username}</td>
+                        <td>${user.nickname || '-'}</td>
+                        <td>${user.email}</td>
+                        <td>${roleSelect}</td>
+                        <td>
+                            <span class="badge ${user.is_active ? 'bg-success' : 'bg-secondary'}">
+                                ${user.is_active ? '活跃' : '禁用'}
+                            </span>
+                        </td>
+                        <td>${user.created_at || 'N/A'}</td>
+                        <td>${actionButtons}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('搜索用户失败:', error);
+                alert('搜索用户失败，请稍后重试');
+            });
     }
 
     // 重置用户搜索
@@ -1331,7 +1446,83 @@
                 });
         }
     }
-    {% endif %}
+
+    // 导出用户数据
+    function exportUsers() {
+        // 获取当前搜索条件
+        const keyword = document.getElementById('userKeyword').value;
+        const role = document.getElementById('userRole').value;
+        const status = document.getElementById('userStatus').value;
+        const date = document.getElementById('userDate').value;
+        
+        // 构建查询参数
+        const params = new URLSearchParams();
+        if (keyword) params.append('keyword', keyword);
+        if (role) params.append('role', role);
+        if (status) params.append('status', status);
+        if (date) params.append('date', date);
+        
+        // 发起导出请求
+        fetch(`/admin/users/export?${params.toString()}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // 创建下载链接
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `users_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            })
+            .catch(error => {
+                console.error('导出失败:', error);
+                alert('导出用户数据失败，请稍后重试');
+            });
+    }
+
+    // 导入用户数据
+    function importUsers(input) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        fetch('/admin/users/import', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络请求失败: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.code === 200) {
+                    alert(`导入成功！共导入 ${data.data.imported} 个用户，跳过 ${data.data.skipped} 个重复用户`);
+                    loadUsers();
+                } else {
+                    alert('导入失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('导入失败:', error);
+                alert('导入用户数据失败，请稍后重试');
+            })
+            .finally(() => {
+                // 清空文件输入
+                input.value = '';
+            });
+    }
     {% endif %}
 
     {% if session.role == 'super_admin' %}
@@ -1465,6 +1656,7 @@
                 alert('保存配置文件失败，请稍后重试');
             });
     }
+    {% endif %}
     {% endif %}
 </script>
 {% endblock %}
