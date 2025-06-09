@@ -105,6 +105,7 @@
             opacity: 0;
             transform: translateY(-20px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
@@ -116,6 +117,7 @@
             opacity: 1;
             transform: translateY(0);
         }
+
         to {
             opacity: 0;
             transform: translateY(-20px);
@@ -211,13 +213,23 @@
     }
 
     @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
     }
 
     @keyframes fadeOut {
-        from { opacity: 1; }
-        to { opacity: 0; }
+        from {
+            opacity: 1;
+        }
+
+        to {
+            opacity: 0;
+        }
     }
 
     @keyframes scaleIn {
@@ -225,12 +237,13 @@
             opacity: 0;
             transform: scale(0.9);
         }
+
         to {
             opacity: 1;
             transform: scale(1);
         }
     }
-    
+
     /* 恢复对话提示框样式 */
     .resume-conversation-alert {
         position: fixed;
@@ -240,33 +253,33 @@
         border: 1px solid #ddd;
         border-radius: 8px;
         padding: 16px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         z-index: 1000;
         max-width: 350px;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         animation: slideInRight 0.3s ease-out;
     }
-    
+
     .resume-conversation-alert .alert-title {
         font-weight: 600;
         color: #333;
         margin-bottom: 8px;
         font-size: 14px;
     }
-    
+
     .resume-conversation-alert .alert-message {
         color: #666;
         margin-bottom: 16px;
         font-size: 13px;
         line-height: 1.4;
     }
-    
+
     .resume-conversation-alert .alert-buttons {
         display: flex;
         gap: 8px;
         justify-content: flex-end;
     }
-    
+
     .resume-conversation-alert .btn {
         padding: 6px 12px;
         border: none;
@@ -276,30 +289,31 @@
         font-weight: 500;
         transition: all 0.2s;
     }
-    
+
     .resume-conversation-alert .btn-primary {
         background: #007bff;
         color: white;
     }
-    
+
     .resume-conversation-alert .btn-primary:hover {
         background: #0056b3;
     }
-    
+
     .resume-conversation-alert .btn-secondary {
         background: #6c757d;
         color: white;
     }
-    
+
     .resume-conversation-alert .btn-secondary:hover {
         background: #545b62;
     }
-    
+
     @keyframes slideInRight {
         from {
             opacity: 0;
             transform: translateX(100%);
         }
+
         to {
             opacity: 1;
             transform: translateX(0);
@@ -323,13 +337,13 @@
                     <i class="fas fa-plus"></i>
                 </button>
             </div>
-            
+
             <div id="conversationsList">
                 <!-- Conversations will be loaded here -->
             </div>
         </div>
     </div>
-    
+
     <!-- Main Chat Area -->
     <div class="col-md-9">
         <div class="chat-container">
@@ -343,7 +357,7 @@
                     <small class="text-muted" id="chatSubtitle">OpenManus AI 助手</small>
                 </div>
             </div>
-            
+
             <!-- Chat Messages -->
             <div class="chat-messages" id="chatMessages">
                 <div class="text-center text-muted" id="welcomeMessage">
@@ -383,7 +397,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Loading Indicator -->
             <div class="loading" id="loadingIndicator">
                 <div class="spinner-border" role="status">
@@ -391,17 +405,29 @@
                 </div>
                 <p class="mt-2 text-muted">OpenManus 正在思考...</p>
             </div>
-            
+
             <!-- Chat Input -->
             <div class="chat-input">
                 <form id="chatForm">
                     <div class="position-relative">
-                        <textarea class="form-control" id="messageInput" 
-                                  placeholder="在此输入您的消息..." 
-                                  rows="4" 
-                                  style="resize: none; padding-right: 60px; min-height: 100px; border: 2px solid #007bff; border-radius: 8px; background-color: #f8f9fa; box-shadow: 0 2px 4px rgba(0,123,255,0.1);"></textarea>
-                        <button class="btn btn-primary btn-sm position-absolute" type="submit" id="sendBtn" 
-                                style="bottom: 8px; right: 8px; z-index: 10; border-radius: 8px; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                        <textarea class="form-control" id="messageInput" placeholder="在此输入您的消息..." rows="4"
+                            style="resize: none; padding-right: 60px; padding-bottom: 40px; min-height: 100px; border: 2px solid #007bff; border-radius: 8px; background-color: #f8f9fa; box-shadow: 0 2px 4px rgba(0,123,255,0.1);"></textarea>
+
+                        <!-- 模型选择下拉框 -->
+                        <div class="position-absolute d-flex align-items-center"
+                            style="bottom: 8px; left: 8px; z-index: 10; gap: 4px;">
+                            <select class="form-select form-select-sm" id="modelSelect"
+                                style="min-width: 150px; font-size: 12px; border-radius: 6px; border: 1px solid #ced4da; background-color: white;">
+                                <option value="">选择模型...</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshModelsBtn"
+                                style="padding: 2px 6px; font-size: 10px; border-radius: 4px;" title="刷新模型列表">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+
+                        <button class="btn btn-primary btn-sm position-absolute" type="submit" id="sendBtn"
+                            style="bottom: 8px; right: 8px; z-index: 10; border-radius: 8px; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-paper-plane" style="font-size: 14px;"></i>
                         </button>
                     </div>
@@ -431,8 +457,7 @@
                 <form id="newChatForm">
                     <div class="mb-3">
                         <label for="chatTitleInput" class="form-label">对话标题</label>
-                        <input type="text" class="form-control" id="chatTitleInput" 
-                               placeholder="为此对话输入标题" required>
+                        <input type="text" class="form-control" id="chatTitleInput" placeholder="为此对话输入标题" required>
                     </div>
                 </form>
             </div>
@@ -514,7 +539,8 @@
                     </div>
                     <div class="mb-3">
                         <label for="confirmPassword" class="form-label">确认密码</label>
-                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
+                            required>
                     </div>
                 </form>
             </div>
@@ -531,365 +557,382 @@
 
 {% block extra_js %}
 <style>
-#messageInput:focus {
-    border-color: #0056b3 !important;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25), 0 4px 8px rgba(0,123,255,0.2) !important;
-    background-color: #ffffff !important;
-}
+    #messageInput:focus {
+        border-color: #0056b3 !important;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25), 0 4px 8px rgba(0, 123, 255, 0.2) !important;
+        background-color: #ffffff !important;
+    }
 
-#messageInput:hover {
-    border-color: #0056b3 !important;
-    box-shadow: 0 2px 6px rgba(0,123,255,0.15) !important;
-}
+    #messageInput:hover {
+        border-color: #0056b3 !important;
+        box-shadow: 0 2px 6px rgba(0, 123, 255, 0.15) !important;
+    }
 
-.cursor {
-    animation: blink 1s infinite;
-    color: #007bff;
-    font-weight: bold;
-}
+    .cursor {
+        animation: blink 1s infinite;
+        color: #007bff;
+        font-weight: bold;
+    }
 
-@keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
-}
+    @keyframes blink {
 
-.streaming-content {
-    white-space: pre-wrap;
-}
+        0%,
+        50% {
+            opacity: 1;
+        }
 
-.conversation-item {
-    padding: 12px;
-    border-bottom: 1px solid #e9ecef;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.conversation-item:hover {
-    background-color: #f8f9fa;
-    transform: none !important;
-}
-.conversation-item.active {
-    background-color: #e3f2fd;
-    border-left: 4px solid #2196f3;
-    transform: none !important;
-}
-.conversation-content {
-    flex: 1;
-    min-width: 0;
-}
-.conversation-title {
-    font-weight: 500;
-    margin-bottom: 4px;
-    color: #333;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.conversation-time {
-    font-size: 0.85em;
-    color: #666;
-}
-.conversation-actions {
-    opacity: 0;
-    transition: opacity 0.2s;
-    margin-left: 8px;
-}
-.conversation-item:hover .conversation-actions {
-    opacity: 1;
-}
-.delete-conversation {
-    border: none;
-    background: none;
-    color: #dc3545;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-}
-.delete-conversation:hover {
-    background-color: #dc3545;
-    color: white;
-}
+        51%,
+        100% {
+            opacity: 0;
+        }
+    }
 
-/* 消息布局样式 */
-.message {
-    display: flex;
-    margin-bottom: 16px;
-    max-width: 100%;
-}
+    .streaming-content {
+        white-space: pre-wrap;
+    }
 
-/* 用户消息靠右 */
-.message.user-message {
-    justify-content: flex-end;
-}
+    .conversation-item {
+        padding: 12px;
+        border-bottom: 1px solid #e9ecef;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-/* 助手和系统消息靠左 */
-.message.assistant-message,
-.message.system-message {
-    justify-content: flex-start;
-}
+    .conversation-item:hover {
+        background-color: #f8f9fa;
+        transform: none !important;
+    }
 
-.message-content {
-    max-width: 70%;
-    padding: 12px 16px;
-    border-radius: 18px;
-    word-wrap: break-word;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    position: relative;
-}
+    .conversation-item.active {
+        background-color: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        transform: none !important;
+    }
 
-/* 用户消息样式 */
-.message.user-message .message-content {
-    background: linear-gradient(135deg, #007bff, #5dade2);
-    color: white;
-    border-bottom-right-radius: 6px;
-}
+    .conversation-content {
+        flex: 1;
+        min-width: 0;
+    }
 
-/* 助手消息样式 */
-.message.assistant-message .message-content {
-    background: white;
-    color: #333;
-    border: 1px solid #e9ecef;
-    border-bottom-left-radius: 6px;
-}
+    .conversation-title {
+        font-weight: 500;
+        margin-bottom: 4px;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-/* 系统消息样式 */
-.message.system-message .message-content {
-    background: #f8f9fa;
-    color: #6c757d;
-    border: 1px solid #dee2e6;
-    border-radius: 12px;
-    text-align: center;
-    font-style: italic;
-}
+    .conversation-time {
+        font-size: 0.85em;
+        color: #666;
+    }
 
-/* 消息编辑相关样式 */
-.message-actions {
-    opacity: 0;
-    transition: opacity 0.2s;
-    margin-left: auto;
-    display: flex;
-    gap: 4px;
-}
+    .conversation-actions {
+        opacity: 0;
+        transition: opacity 0.2s;
+        margin-left: 8px;
+    }
 
-.message:hover .message-actions {
-    opacity: 1;
-}
+    .conversation-item:hover .conversation-actions {
+        opacity: 1;
+    }
 
-.edit-message-btn {
-    padding: 2px 6px;
-    font-size: 12px;
-    border-radius: 4px;
-    border: 1px solid #dee2e6;
-    background: white;
-    color: #6c757d;
-}
+    .delete-conversation {
+        border: none;
+        background: none;
+        color: #dc3545;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+    }
 
-.edit-message-btn:hover {
-    background: #f8f9fa;
-    color: #495057;
-}
+    .delete-conversation:hover {
+        background-color: #dc3545;
+        color: white;
+    }
 
-.message-edit-form {
-    margin-top: 8px;
-    padding: 8px;
-    background: #f8f9fa;
-    border-radius: 6px;
-    border: 1px solid #dee2e6;
-}
+    /* 消息布局样式 */
+    .message {
+        display: flex;
+        margin-bottom: 16px;
+        max-width: 100%;
+    }
 
-.message-edit-textarea {
-    width: 100%;
-    min-height: 60px;
-    padding: 8px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    resize: vertical;
-    font-family: inherit;
-    font-size: 14px;
-}
+    /* 用户消息靠右 */
+    .message.user-message {
+        justify-content: flex-end;
+    }
 
-.message-edit-actions {
-    margin-top: 8px;
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-}
+    /* 助手和系统消息靠左 */
+    .message.assistant-message,
+    .message.system-message {
+        justify-content: flex-start;
+    }
 
-.message-edit-actions .btn {
-    padding: 4px 12px;
-    font-size: 12px;
-}
+    .message-content {
+        max-width: 70%;
+        padding: 12px 16px;
+        border-radius: 18px;
+        word-wrap: break-word;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
 
-.message-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-}
+    /* 用户消息样式 */
+    .message.user-message .message-content {
+        background: linear-gradient(135deg, #007bff, #5dade2);
+        color: white;
+        border-bottom-right-radius: 6px;
+    }
 
-/* 用户消息头部右对齐 */
-.message.user-message .message-header {
-    justify-content: flex-end;
-    flex-direction: row-reverse;
-}
+    /* 助手消息样式 */
+    .message.assistant-message .message-content {
+        background: white;
+        color: #333;
+        border: 1px solid #e9ecef;
+        border-bottom-left-radius: 6px;
+    }
 
-/* 助手和系统消息头部左对齐 */
-.message.assistant-message .message-header,
-.message.system-message .message-header {
-    justify-content: flex-start;
-}
+    /* 系统消息样式 */
+    .message.system-message .message-content {
+        background: #f8f9fa;
+        color: #6c757d;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        text-align: center;
+        font-style: italic;
+    }
 
-.message-sender {
-    font-weight: 500;
-}
+    /* 消息编辑相关样式 */
+    .message-actions {
+        opacity: 0;
+        transition: opacity 0.2s;
+        margin-left: auto;
+        display: flex;
+        gap: 4px;
+    }
 
-.message-time {
-    font-size: 12px;
-    color: #6c757d;
-}
+    .message:hover .message-actions {
+        opacity: 1;
+    }
 
-/* 用户消息时间和发送者颜色调整 */
-.message.user-message .message-time,
-.message.user-message .message-sender {
-    color: rgba(255, 255, 255, 0.8);
-}
+    .edit-message-btn {
+        padding: 2px 6px;
+        font-size: 12px;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #6c757d;
+    }
 
-.message-text {
-    line-height: 1.5;
-}
+    .edit-message-btn:hover {
+        background: #f8f9fa;
+        color: #495057;
+    }
 
-/* Thinking容器样式 */
-.thinking-container {
-    margin: 10px 0;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background-color: #f8f9fa;
-    overflow: hidden;
-}
+    .message-edit-form {
+        margin-top: 8px;
+        padding: 8px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+    }
 
-.thinking-header {
-    padding: 12px 16px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    transition: background-color 0.2s ease;
-    user-select: none;
-}
+    .message-edit-textarea {
+        width: 100%;
+        min-height: 60px;
+        padding: 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        resize: vertical;
+        font-family: inherit;
+        font-size: 14px;
+    }
 
-.thinking-header:hover {
-    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-}
+    .message-edit-actions {
+        margin-top: 8px;
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
 
-.thinking-icon {
-    margin-right: 8px;
-    font-size: 16px;
-}
+    .message-edit-actions .btn {
+        padding: 4px 12px;
+        font-size: 12px;
+    }
 
-.thinking-title {
-    flex: 1;
-    font-weight: 500;
-    font-size: 14px;
-}
+    .message-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
 
-.thinking-toggle {
-    transition: transform 0.2s ease;
-    font-size: 12px;
-}
+    /* 用户消息头部右对齐 */
+    .message.user-message .message-header {
+        justify-content: flex-end;
+        flex-direction: row-reverse;
+    }
 
-.thinking-content {
-    padding: 16px;
-    background-color: #ffffff;
-    border-top: 1px solid #e9ecef;
-    line-height: 1.6;
-    color: #495057;
-    font-size: 14px;
-}
+    /* 助手和系统消息头部左对齐 */
+    .message.assistant-message .message-header,
+    .message.system-message .message-header {
+        justify-content: flex-start;
+    }
 
-.thinking-content br {
-    margin-bottom: 8px;
-}
+    .message-sender {
+        font-weight: 500;
+    }
+
+    .message-time {
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    /* 用户消息时间和发送者颜色调整 */
+    .message.user-message .message-time,
+    .message.user-message .message-sender {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .message-text {
+        line-height: 1.5;
+    }
+
+    /* Thinking容器样式 */
+    .thinking-container {
+        margin: 10px 0;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        overflow: hidden;
+    }
+
+    .thinking-header {
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        transition: background-color 0.2s ease;
+        user-select: none;
+    }
+
+    .thinking-header:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    }
+
+    .thinking-icon {
+        margin-right: 8px;
+        font-size: 16px;
+    }
+
+    .thinking-title {
+        flex: 1;
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    .thinking-toggle {
+        transition: transform 0.2s ease;
+        font-size: 12px;
+    }
+
+    .thinking-content {
+        padding: 16px;
+        background-color: #ffffff;
+        border-top: 1px solid #e9ecef;
+        line-height: 1.6;
+        color: #495057;
+        font-size: 14px;
+    }
+
+    .thinking-content br {
+        margin-bottom: 8px;
+    }
 </style>
 
 <script>
-let currentConversationId = null;
-let conversations = [];
-let isGuest = false;
-let pendingMessage = '';
-let conversationStates = {}; // 存储每个对话的独立状态
+    let currentConversationId = null;
+    let conversations = [];
+    let isGuest = false;
+    let pendingMessage = '';
+    let conversationStates = {}; // 存储每个对话的独立状态
 
-// 顶部提示框功能
-function showTips(message, type = 'info', duration = 3000) {
-    const container = document.getElementById('tipsContainer');
-    if (!container) return;
-    
-    // 创建提示框元素
-    const alert = document.createElement('div');
-    alert.className = `tips-alert tips-alert-${type}`;
-    
-    // 根据类型设置图标
-    let icon = '';
-    switch(type) {
-        case 'success':
-            icon = '✓';
-            break;
-        case 'error':
-            icon = '✗';
-            break;
-        case 'warning':
-            icon = '⚠';
-            break;
-        case 'info':
-        default:
-            icon = 'ℹ';
-            break;
-    }
-    
-    alert.innerHTML = `
+    // 顶部提示框功能
+    function showTips(message, type = 'info', duration = 3000) {
+        const container = document.getElementById('tipsContainer');
+        if (!container) return;
+
+        // 创建提示框元素
+        const alert = document.createElement('div');
+        alert.className = `tips-alert tips-alert-${type}`;
+
+        // 根据类型设置图标
+        let icon = '';
+        switch (type) {
+            case 'success':
+                icon = '✓';
+                break;
+            case 'error':
+                icon = '✗';
+                break;
+            case 'warning':
+                icon = '⚠';
+                break;
+            case 'info':
+            default:
+                icon = 'ℹ';
+                break;
+        }
+
+        alert.innerHTML = `
         <div class="tips-content">
             <span class="tips-icon">${icon}</span>
             <span class="tips-message">${message}</span>
         </div>
         <button class="tips-close" onclick="closeTips(this)">&times;</button>
     `;
-    
-    // 添加到容器
-    container.appendChild(alert);
-    
-    // 自动关闭
-    if (duration > 0) {
-        setTimeout(() => {
-            closeTips(alert.querySelector('.tips-close'));
-        }, duration);
-    }
-    
-    return alert;
-}
 
-// 关闭提示框
-function closeTips(closeBtn) {
-    const alert = closeBtn.closest('.tips-alert');
-    if (alert) {
-        alert.classList.add('removing');
-        setTimeout(() => {
-            if (alert.parentNode) {
-                alert.parentNode.removeChild(alert);
-            }
-        }, 300);
-    }
-}
+        // 添加到容器
+        container.appendChild(alert);
 
-// 确认对话框
-function showConfirm(message, title = '确认操作', onConfirm = null, onCancel = null) {
-    return new Promise((resolve) => {
-        // 创建遮罩层
-        const overlay = document.createElement('div');
-        overlay.className = 'confirm-overlay';
-        
-        overlay.innerHTML = `
+        // 自动关闭
+        if (duration > 0) {
+            setTimeout(() => {
+                closeTips(alert.querySelector('.tips-close'));
+            }, duration);
+        }
+
+        return alert;
+    }
+
+    // 关闭提示框
+    function closeTips(closeBtn) {
+        const alert = closeBtn.closest('.tips-alert');
+        if (alert) {
+            alert.classList.add('removing');
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 300);
+        }
+    }
+
+    // 确认对话框
+    function showConfirm(message, title = '确认操作', onConfirm = null, onCancel = null) {
+        return new Promise((resolve) => {
+            // 创建遮罩层
+            const overlay = document.createElement('div');
+            overlay.className = 'confirm-overlay';
+
+            overlay.innerHTML = `
             <div class="confirm-dialog">
                 <div class="confirm-header">
                     <span class="confirm-icon">⚠</span>
@@ -902,150 +945,150 @@ function showConfirm(message, title = '确认操作', onConfirm = null, onCancel
                 </div>
             </div>
         `;
-        
-        // 添加到页面
-        document.body.appendChild(overlay);
-        
-        // 绑定事件
-        const cancelBtn = overlay.querySelector('.confirm-btn-cancel');
-        const confirmBtn = overlay.querySelector('.confirm-btn-confirm');
-        
-        const cleanup = () => {
-            overlay.style.animation = 'fadeOut 0.3s ease-out';
-            setTimeout(() => {
-                if (overlay.parentNode) {
-                    overlay.parentNode.removeChild(overlay);
-                }
-            }, 300);
-        };
-        
-        cancelBtn.onclick = () => {
-            cleanup();
-            if (onCancel) onCancel();
-            resolve(false);
-        };
-        
-        confirmBtn.onclick = () => {
-            cleanup();
-            if (onConfirm) onConfirm();
-            resolve(true);
-        };
-        
-        // 点击遮罩层关闭
-        overlay.onclick = (e) => {
-            if (e.target === overlay) {
+
+            // 添加到页面
+            document.body.appendChild(overlay);
+
+            // 绑定事件
+            const cancelBtn = overlay.querySelector('.confirm-btn-cancel');
+            const confirmBtn = overlay.querySelector('.confirm-btn-confirm');
+
+            const cleanup = () => {
+                overlay.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => {
+                    if (overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                }, 300);
+            };
+
+            cancelBtn.onclick = () => {
                 cleanup();
                 if (onCancel) onCancel();
                 resolve(false);
-            }
-        };
-    });
-}
+            };
 
-// 对话状态管理
-let activeStreamingState = null;
+            confirmBtn.onclick = () => {
+                cleanup();
+                if (onConfirm) onConfirm();
+                resolve(true);
+            };
 
-// 保存对话状态到 localStorage
-function saveConversationState(state) {
-    try {
-        localStorage.setItem('activeConversationState', JSON.stringify(state));
-    } catch (e) {
-        console.error('Failed to save conversation state:', e);
-    }
-}
-
-// 从 localStorage 恢复对话状态
-function restoreConversationState() {
-    try {
-        const savedState = localStorage.getItem('activeConversationState');
-        if (savedState) {
-            return JSON.parse(savedState);
-        }
-    } catch (e) {
-        console.error('Failed to restore conversation state:', e);
-    }
-    return null;
-}
-
-// 清除保存的对话状态
-function clearConversationState() {
-    try {
-        localStorage.removeItem('activeConversationState');
-    } catch (e) {
-        console.error('Failed to clear conversation state:', e);
-    }
-}
-
-// 保存当前对话的状态
-function saveCurrentConversationState() {
-    if (!currentConversationId) return;
-    
-    const state = {
-        conversationId: currentConversationId,
-        thinkingSteps: {},
-        timestamp: Date.now()
-    };
-    
-    // 保存思考步骤的展开/折叠状态
-    $('.thinking-container').each(function() {
-        const stepId = $(this).data('step-id') || $(this).index();
-        const content = $(this).find('.thinking-content');
-        state.thinkingSteps[stepId] = {
-            expanded: content.is(':visible')
-        };
-    });
-    
-    conversationStates[currentConversationId] = state;
-}
-
-// 恢复特定对话的状态
-function restoreSpecificConversationState(convId) {
-    if (!convId) return;
-    
-    const state = conversationStates[convId];
-    if (state) {
-        // 恢复思考步骤显示状态
-        setTimeout(() => {
-            $('.thinking-container').each(function() {
-                const stepId = $(this).data('step-id') || $(this).index();
-                if (state.thinkingSteps && state.thinkingSteps[stepId]) {
-                    const stepState = state.thinkingSteps[stepId];
-                    const content = $(this).find('.thinking-content');
-                    const toggle = $(this).find('.thinking-toggle');
-                    
-                    if (stepState.expanded) {
-                        content.show();
-                        toggle.removeClass('fa-chevron-down').addClass('fa-chevron-up');
-                    } else {
-                        content.hide();
-                        toggle.removeClass('fa-chevron-up').addClass('fa-chevron-down');
-                    }
+            // 点击遮罩层关闭
+            overlay.onclick = (e) => {
+                if (e.target === overlay) {
+                    cleanup();
+                    if (onCancel) onCancel();
+                    resolve(false);
                 }
-            });
-        }, 100);
+            };
+        });
     }
-}
 
-// 检查并恢复正在进行的对话
-function checkAndRestoreActiveConversation() {
-    const savedState = restoreConversationState();
-    if (savedState && savedState.isActive) {
-        const timeDiff = Date.now() - savedState.timestamp;
-        // 如果状态保存时间超过5分钟，认为对话已过期
-        if (timeDiff > 5 * 60 * 1000) {
-            clearConversationState();
-            return;
+    // 对话状态管理
+    let activeStreamingState = null;
+
+    // 保存对话状态到 localStorage
+    function saveConversationState(state) {
+        try {
+            localStorage.setItem('activeConversationState', JSON.stringify(state));
+        } catch (e) {
+            console.error('Failed to save conversation state:', e);
         }
-        
-        // 恢复对话状态
-        if (savedState.conversationId) {
-            currentConversationId = savedState.conversationId;
-            // 重新加载对话消息
-            loadMessages(savedState.conversationId);
+    }
+
+    // 从 localStorage 恢复对话状态
+    function restoreConversationState() {
+        try {
+            const savedState = localStorage.getItem('activeConversationState');
+            if (savedState) {
+                return JSON.parse(savedState);
+            }
+        } catch (e) {
+            console.error('Failed to restore conversation state:', e);
         }
-        
-        // 显示恢复提示和选项
-        const resumeHtml = `
+        return null;
+    }
+
+    // 清除保存的对话状态
+    function clearConversationState() {
+        try {
+            localStorage.removeItem('activeConversationState');
+        } catch (e) {
+            console.error('Failed to clear conversation state:', e);
+        }
+    }
+
+    // 保存当前对话的状态
+    function saveCurrentConversationState() {
+        if (!currentConversationId) return;
+
+        const state = {
+            conversationId: currentConversationId,
+            thinkingSteps: {},
+            timestamp: Date.now()
+        };
+
+        // 保存思考步骤的展开/折叠状态
+        $('.thinking-container').each(function () {
+            const stepId = $(this).data('step-id') || $(this).index();
+            const content = $(this).find('.thinking-content');
+            state.thinkingSteps[stepId] = {
+                expanded: content.is(':visible')
+            };
+        });
+
+        conversationStates[currentConversationId] = state;
+    }
+
+    // 恢复特定对话的状态
+    function restoreSpecificConversationState(convId) {
+        if (!convId) return;
+
+        const state = conversationStates[convId];
+        if (state) {
+            // 恢复思考步骤显示状态
+            setTimeout(() => {
+                $('.thinking-container').each(function () {
+                    const stepId = $(this).data('step-id') || $(this).index();
+                    if (state.thinkingSteps && state.thinkingSteps[stepId]) {
+                        const stepState = state.thinkingSteps[stepId];
+                        const content = $(this).find('.thinking-content');
+                        const toggle = $(this).find('.thinking-toggle');
+
+                        if (stepState.expanded) {
+                            content.show();
+                            toggle.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                        } else {
+                            content.hide();
+                            toggle.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                        }
+                    }
+                });
+            }, 100);
+        }
+    }
+
+    // 检查并恢复正在进行的对话
+    function checkAndRestoreActiveConversation() {
+        const savedState = restoreConversationState();
+        if (savedState && savedState.isActive) {
+            const timeDiff = Date.now() - savedState.timestamp;
+            // 如果状态保存时间超过5分钟，认为对话已过期
+            if (timeDiff > 5 * 60 * 1000) {
+                clearConversationState();
+                return;
+            }
+
+            // 恢复对话状态
+            if (savedState.conversationId) {
+                currentConversationId = savedState.conversationId;
+                // 重新加载对话消息
+                loadMessages(savedState.conversationId);
+            }
+
+            // 显示恢复提示和选项
+            const resumeHtml = `
             <div class="resume-conversation-alert">
                 <div class="alert-content">
                     <i class="fas fa-info-circle"></i>
@@ -1057,520 +1100,553 @@ function checkAndRestoreActiveConversation() {
                 </div>
             </div>
         `;
-        
-        // 添加到页面顶部
-        $('body').prepend(resumeHtml);
-        
-        // 保存状态供手动恢复使用
-        window.pendingResumeState = savedState;
-        
-        // 不自动恢复，等待用户选择
-         return;
-    }
-}
 
-// 恢复流式对话
-function resumeStreamingConversation(savedState) {
-    // 显示加载指示器
-    $('#loadingIndicator').show();
-    
-    // 创建新的助手消息容器
-    const assistantMessageId = 'msg-' + Date.now();
-    addStreamingMessage('assistant', '', assistantMessageId);
-    
-    // 更新状态
-    activeStreamingState = {
-        messageId: assistantMessageId,
-        conversationId: savedState.conversationId,
-        userMessage: savedState.userMessage,
-        isActive: true,
-        timestamp: Date.now()
-    };
-    saveConversationState(activeStreamingState);
-    
-    // 重新发送消息以恢复对话
-    const endpoint = isGuest ? '/api/chat-guest-stream' : '/api/chat-stream';
-    const data = isGuest ? { message: savedState.userMessage } : { 
-        message: savedState.userMessage, 
-        conversation_id: savedState.conversationId 
-    };
-    
-    // 使用fetch API支持流式响应
-    fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams(data)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+            // 添加到页面顶部
+            $('body').prepend(resumeHtml);
+
+            // 保存状态供手动恢复使用
+            window.pendingResumeState = savedState;
+
+            // 不自动恢复，等待用户选择
+            return;
         }
-        
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        
-        function readStream() {
-            return reader.read().then(({ done, value }) => {
-                if (done) {
-                    $('#loadingIndicator').hide();
-                    activeStreamingState = null;
-                    clearConversationState();
-                    return;
+    }
+
+    // 恢复流式对话
+    function resumeStreamingConversation(savedState) {
+        // 显示加载指示器
+        $('#loadingIndicator').show();
+
+        // 创建新的助手消息容器
+        const assistantMessageId = 'msg-' + Date.now();
+        addStreamingMessage('assistant', '', assistantMessageId);
+
+        // 更新状态
+        activeStreamingState = {
+            messageId: assistantMessageId,
+            conversationId: savedState.conversationId,
+            userMessage: savedState.userMessage,
+            isActive: true,
+            timestamp: Date.now()
+        };
+        saveConversationState(activeStreamingState);
+
+        // 重新发送消息以恢复对话
+        const endpoint = isGuest ? '/api/chat-guest-stream' : '/api/chat-stream';
+        const data = isGuest ? { message: savedState.userMessage } : {
+            message: savedState.userMessage,
+            conversation_id: savedState.conversationId
+        };
+
+        // 使用fetch API支持流式响应
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(data)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-                
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop();
-                
-                lines.forEach(line => {
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(6);
-                        if (data === '[DONE]') {
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                function readStream() {
+                    return reader.read().then(({ done, value }) => {
+                        if (done) {
                             $('#loadingIndicator').hide();
                             activeStreamingState = null;
                             clearConversationState();
                             return;
                         }
-                        
-                        try {
-                            const parsed = JSON.parse(data);
-                            if (parsed.type === 'content') {
-                                const stepMatch = parsed.content.match(/📝 \*\*步骤 (\d+):\*\*/);
-                                if (stepMatch) {
-                                    const stepNumber = stepMatch[1];
-                                    $('#loadingIndicator p').text(`OpenManus 正在思考... (步骤 ${stepNumber})`);
-                                } else if (parsed.content.includes('🤔 开始思考...')) {
-                                    $('#loadingIndicator p').text('OpenManus 正在思考... (初始化)');
-                                } else if (parsed.content.includes('✅ **最终回复:**')) {
-                                    $('#loadingIndicator p').text('OpenManus 正在思考... (生成回复)');
-                                }
-                                
-                                appendToStreamingMessage(assistantMessageId, parsed.content);
-                            } else if (parsed.type === 'error') {
-                                $('#loadingIndicator').hide();
-                                addMessage('system', '抱歉，发生了错误：' + parsed.message);
-                                activeStreamingState = null;
-                                clearConversationState();
-                                return;
-                            } else if (parsed.type === 'done') {
-                                $('#loadingIndicator').hide();
-                                finalizeStreamingMessage(assistantMessageId);
-                                if (!isGuest && parsed.conversation_id) {
-                                    currentConversationId = parsed.conversation_id;
-                                    loadConversations();
-                                }
-                                activeStreamingState = null;
-                                clearConversationState();
-                                return;
-                            }
-                        } catch (e) {
-                            console.error('Error parsing SSE data:', e);
-                        }
-                    }
-                });
-                
-                return readStream();
-            });
-        }
-        
-        return readStream();
-    })
-    .catch(error => {
-        $('#loadingIndicator').hide();
-        console.error('Resume conversation error:', error);
-        addMessage('system', '恢复对话失败，请重新发送消息');
-        activeStreamingState = null;
-        clearConversationState();
-    });
-}
 
-$(document).ready(function() {
-    // 检查是否为游客模式
-    const urlParams = new URLSearchParams(window.location.search);
-    isGuest = urlParams.get('guest') === 'true';
-    
-    if (isGuest) {
-        // 游客模式，创建临时会话
-        $('#conversationTitle').text('游客模式');
-        $('#chatSubtitle').text('游客访问 - 数据不会保存');
-        enableChat();
-    } else {
-        loadConversations();
-        checkUserAuth();
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        lines.forEach(line => {
+                            if (line.startsWith('data: ')) {
+                                const data = line.slice(6);
+                                if (data === '[DONE]') {
+                                    $('#loadingIndicator').hide();
+                                    activeStreamingState = null;
+                                    clearConversationState();
+                                    return;
+                                }
+
+                                try {
+                                    const parsed = JSON.parse(data);
+                                    if (parsed.type === 'content') {
+                                        const stepMatch = parsed.content.match(/📝 \*\*步骤 (\d+):\*\*/);
+                                        if (stepMatch) {
+                                            const stepNumber = stepMatch[1];
+                                            $('#loadingIndicator p').text(`OpenManus 正在思考... (步骤 ${stepNumber})`);
+                                        } else if (parsed.content.includes('🤔 开始思考...')) {
+                                            $('#loadingIndicator p').text('OpenManus 正在思考... (初始化)');
+                                        } else if (parsed.content.includes('✅ **最终回复:**')) {
+                                            $('#loadingIndicator p').text('OpenManus 正在思考... (生成回复)');
+                                        }
+
+                                        appendToStreamingMessage(assistantMessageId, parsed.content);
+                                    } else if (parsed.type === 'error') {
+                                        $('#loadingIndicator').hide();
+                                        addMessage('system', '抱歉，发生了错误：' + parsed.message);
+                                        activeStreamingState = null;
+                                        clearConversationState();
+                                        return;
+                                    } else if (parsed.type === 'done') {
+                                        $('#loadingIndicator').hide();
+                                        finalizeStreamingMessage(assistantMessageId);
+                                        if (!isGuest && parsed.conversation_id) {
+                                            currentConversationId = parsed.conversation_id;
+                                            loadConversations();
+                                        }
+                                        activeStreamingState = null;
+                                        clearConversationState();
+                                        return;
+                                    }
+                                } catch (e) {
+                                    console.error('Error parsing SSE data:', e);
+                                }
+                            }
+                        });
+
+                        return readStream();
+                    });
+                }
+
+                return readStream();
+            })
+            .catch(error => {
+                $('#loadingIndicator').hide();
+                console.error('Resume conversation error:', error);
+                addMessage('system', '恢复对话失败，请重新发送消息');
+                activeStreamingState = null;
+                clearConversationState();
+            });
     }
-    
-    // 检查并恢复正在进行的对话
-    checkAndRestoreActiveConversation();
-    
-    // 页面卸载时保存状态
-    window.addEventListener('beforeunload', function(e) {
-        if (activeStreamingState && activeStreamingState.isActive) {
-            // 更新时间戳
-            activeStreamingState.timestamp = Date.now();
-            saveConversationState(activeStreamingState);
+
+    $(document).ready(function () {
+        // 检查是否为游客模式
+        const urlParams = new URLSearchParams(window.location.search);
+        isGuest = urlParams.get('guest') === 'true';
+
+        if (isGuest) {
+            // 游客模式，创建临时会话
+            $('#conversationTitle').text('游客模式');
+            $('#chatSubtitle').text('游客访问 - 数据不会保存');
+            enableChat();
+        } else {
+            loadConversations();
+            checkUserAuth();
         }
-    });
-    
-    // 页面可见性变化处理
-    document.addEventListener('visibilitychange', function() {
-        if (document.hidden) {
-            // 页面隐藏时保存状态
+
+        // 检查并恢复正在进行的对话
+        checkAndRestoreActiveConversation();
+
+        // 加载模型列表
+        loadModelList();
+
+        // 页面卸载时保存状态
+        window.addEventListener('beforeunload', function (e) {
             if (activeStreamingState && activeStreamingState.isActive) {
+                // 更新时间戳
                 activeStreamingState.timestamp = Date.now();
                 saveConversationState(activeStreamingState);
             }
-        } else {
-            // 页面重新可见时检查是否需要恢复
-            if (!activeStreamingState) {
-                checkAndRestoreActiveConversation();
-            }
-        }
-    });
-    
-    // 聊天表单提交
-    $('#chatForm').submit(function(e) {
-        e.preventDefault();
-        
-        // 检查登录状态
-        if (!isGuest && !currentConversationId) {
-            // 已登录但没有选择对话，自动创建新对话
-            const message = $('#messageInput').val().trim();
-            if (message) {
-                createNewConversationAndSend(message);
-            }
-            return;
-        }
-        
-        sendMessage();
-    });
-    
-    // 消息输入框键盘事件处理
-    $('#messageInput').on('keydown', function(e) {
-        // Enter键发送消息（不按Shift）
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            $('#chatForm').submit();
-        }
-    });
-    
-    // 自动调整textarea高度
-    $('#messageInput').on('input', function() {
-        const minHeight = 100; // 4行的高度
-        const maxHeight = 200; // 8行的高度
-        
-        this.style.height = 'auto';
-        const newHeight = Math.max(minHeight, Math.min(this.scrollHeight, maxHeight));
-        this.style.height = newHeight + 'px';
-        
-        // 如果内容超过最大高度，显示滚动条
-        if (this.scrollHeight > maxHeight) {
-            this.style.overflowY = 'auto';
-        } else {
-            this.style.overflowY = 'hidden';
-        }
-    });
-    
-    // 新建对话
-    $('#newChatBtn').click(function() {
-        if (isGuest) {
-            alert('游客模式下无法创建新对话');
-            return;
-        }
-        $('#newChatModal').modal('show');
-    });
-    
-    // 创建新对话
-    $('#createChatBtn').click(function() {
-        const title = $('#chatTitleInput').val().trim();
-        if (!title) {
-            alert('请输入对话标题');
-            return;
-        }
-        
-        createNewConversation(title);
-    });
-    
-    // 侧边栏切换
-    $('#toggleSidebar').click(function() {
-        $('#sidebar').toggleClass('show');
-    });
-    
-    // 登录相关事件
-    setupLoginEvents();
-});
+        });
 
-function checkLoginAndSend() {
-    // 检查用户是否已登录
-    $.ajax({
-        url: '/api/check-auth',
-        method: 'GET',
-        success: function(response) {
-            if (response.authenticated) {
-                // 已登录，直接发送消息
-                sendMessage();
+        // 页面可见性变化处理
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                // 页面隐藏时保存状态
+                if (activeStreamingState && activeStreamingState.isActive) {
+                    activeStreamingState.timestamp = Date.now();
+                    saveConversationState(activeStreamingState);
+                }
             } else {
-                // 未登录，显示登录框
+                // 页面重新可见时检查是否需要恢复
+                if (!activeStreamingState) {
+                    checkAndRestoreActiveConversation();
+                }
+            }
+        });
+
+        // 聊天表单提交
+        $('#chatForm').submit(function (e) {
+            e.preventDefault();
+
+            // 检查登录状态
+            if (!isGuest && !currentConversationId) {
+                // 已登录但没有选择对话，自动创建新对话
+                const message = $('#messageInput').val().trim();
+                if (message) {
+                    createNewConversationAndSend(message);
+                }
+                return;
+            }
+
+            sendMessage();
+        });
+
+        // 消息输入框键盘事件处理
+        $('#messageInput').on('keydown', function (e) {
+            // Enter键发送消息（不按Shift）
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                $('#chatForm').submit();
+            }
+        });
+
+        // 自动调整textarea高度
+        $('#messageInput').on('input', function () {
+            const minHeight = 100; // 4行的高度
+            const maxHeight = 200; // 8行的高度
+
+            this.style.height = 'auto';
+            const newHeight = Math.max(minHeight, Math.min(this.scrollHeight, maxHeight));
+            this.style.height = newHeight + 'px';
+
+            // 如果内容超过最大高度，显示滚动条
+            if (this.scrollHeight > maxHeight) {
+                this.style.overflowY = 'auto';
+            } else {
+                this.style.overflowY = 'hidden';
+            }
+        });
+
+        // 新建对话
+        $('#newChatBtn').click(function () {
+            if (isGuest) {
+                alert('游客模式下无法创建新对话');
+                return;
+            }
+            $('#newChatModal').modal('show');
+        });
+
+        // 创建新对话
+        $('#createChatBtn').click(function () {
+            const title = $('#chatTitleInput').val().trim();
+            if (!title) {
+                alert('请输入对话标题');
+                return;
+            }
+
+            createNewConversation(title);
+        });
+
+        // 侧边栏切换
+        $('#toggleSidebar').click(function () {
+            $('#sidebar').toggleClass('show');
+        });
+
+        // 登录相关事件
+        setupLoginEvents();
+
+        // 刷新模型列表按钮
+        $('#refreshModelsBtn').click(function () {
+            const btn = $(this);
+            const icon = btn.find('i');
+
+            // 显示加载状态
+            icon.addClass('fa-spin');
+            btn.prop('disabled', true);
+
+            // 重新加载模型列表
+            loadModelList();
+
+            // 2秒后恢复按钮状态
+            setTimeout(function () {
+                icon.removeClass('fa-spin');
+                btn.prop('disabled', false);
+            }, 2000);
+        });
+    });
+
+    function checkLoginAndSend() {
+        // 检查用户是否已登录
+        $.ajax({
+            url: '/api/check-auth',
+            method: 'GET',
+            success: function (response) {
+                if (response.authenticated) {
+                    // 已登录，直接发送消息
+                    sendMessage();
+                } else {
+                    // 未登录，显示登录框
+                    $('#loginModal').modal('show');
+                }
+            },
+            error: function () {
+                // 检查失败，显示登录框
                 $('#loginModal').modal('show');
             }
-        },
-        error: function() {
-            // 检查失败，显示登录框
-            $('#loginModal').modal('show');
-        }
-    });
-}
+        });
+    }
 
-function sendMessage() {
-    const message = $('#messageInput').val().trim();
-    if (!message) return;
-    
-    // 添加用户消息到界面
-    addMessage('user', message);
-    $('#messageInput').val('');
-    
-    // 显示加载指示器
-    $('#loadingIndicator').show();
-    
-    // 创建助手消息容器，准备接收流式输出
-    const assistantMessageId = 'msg-' + Date.now();
-    addStreamingMessage('assistant', '', assistantMessageId);
-    
-    // 保存对话状态
-    activeStreamingState = {
-        messageId: assistantMessageId,
-        conversationId: currentConversationId,
-        userMessage: message,
-        isActive: true,
-        timestamp: Date.now()
-    };
-    saveConversationState(activeStreamingState);
-    
-    // 发送消息到后端并接收流式响应
-    const endpoint = isGuest ? '/api/chat-guest-stream' : '/api/chat-stream';
-    const data = isGuest ? { message: message } : { 
-        message: message, 
-        conversation_id: currentConversationId 
-    };
-    
-    // 使用fetch API支持流式响应
-    fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams(data)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+    function sendMessage() {
+        const message = $('#messageInput').val().trim();
+        if (!message) return;
+
+        // 检查是否选择了模型
+        const selectedModel = getSelectedModel();
+        if (!selectedModel) {
+            showTips('请先选择一个模型', 'warning');
+            return;
         }
-        
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        
-        function readStream() {
-            return reader.read().then(({ done, value }) => {
-                if (done) {
-                    $('#loadingIndicator').hide();
-                    activeStreamingState = null;
-                    clearConversationState();
-                    return;
+
+        // 添加用户消息到界面
+        addMessage('user', message);
+        $('#messageInput').val('');
+
+        // 显示加载指示器
+        $('#loadingIndicator').show();
+
+        // 创建助手消息容器，准备接收流式输出
+        const assistantMessageId = 'msg-' + Date.now();
+        addStreamingMessage('assistant', '', assistantMessageId);
+
+        // 保存对话状态
+        activeStreamingState = {
+            messageId: assistantMessageId,
+            conversationId: currentConversationId,
+            userMessage: message,
+            isActive: true,
+            timestamp: Date.now()
+        };
+        saveConversationState(activeStreamingState);
+
+        // 发送消息到后端并接收流式响应
+        const endpoint = isGuest ? '/api/chat-guest-stream' : '/api/chat-stream';
+        const data = isGuest ? {
+            message: message,
+            model: selectedModel
+        } : {
+            message: message,
+            conversation_id: currentConversationId,
+            model: selectedModel
+        };
+
+        // 使用fetch API支持流式响应
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(data)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-                
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop(); // 保留不完整的行
-                
-                lines.forEach(line => {
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(6);
-                        if (data === '[DONE]') {
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                function readStream() {
+                    return reader.read().then(({ done, value }) => {
+                        if (done) {
                             $('#loadingIndicator').hide();
                             activeStreamingState = null;
                             clearConversationState();
                             return;
                         }
-                        
-                        try {
-                            const parsed = JSON.parse(data);
-                            if (parsed.type === 'content') {
-                                // 检测步骤信息并更新加载指示器
-                                const stepMatch = parsed.content.match(/📝 \*\*步骤 (\d+):\*\*/);
-                                if (stepMatch) {
-                                    const stepNumber = stepMatch[1];
-                                    $('#loadingIndicator p').text(`OpenManus 正在思考... (步骤 ${stepNumber})`);
-                                } else if (parsed.content.includes('🤔 开始思考...')) {
-                                    $('#loadingIndicator p').text('OpenManus 正在思考... (初始化)');
-                                } else if (parsed.content.includes('✅ **最终回复:**')) {
-                                    $('#loadingIndicator p').text('OpenManus 正在思考... (生成回复)');
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop(); // 保留不完整的行
+
+                        lines.forEach(line => {
+                            if (line.startsWith('data: ')) {
+                                const data = line.slice(6);
+                                if (data === '[DONE]') {
+                                    $('#loadingIndicator').hide();
+                                    activeStreamingState = null;
+                                    clearConversationState();
+                                    return;
                                 }
-                                
-                                appendToStreamingMessage(assistantMessageId, parsed.content);
-                            } else if (parsed.type === 'error') {
-                                $('#loadingIndicator').hide();
-                                addMessage('system', '抱歉，发生了错误：' + parsed.message);
-                                activeStreamingState = null;
-                                clearConversationState();
-                                return;
-                            } else if (parsed.type === 'done') {
-                                 $('#loadingIndicator').hide();
-                                 finalizeStreamingMessage(assistantMessageId);
-                                 if (!isGuest && parsed.conversation_id) {
-                                     currentConversationId = parsed.conversation_id;
-                                     loadConversations();
-                                 }
-                                 activeStreamingState = null;
-                                 clearConversationState();
-                                 return;
-                             }
-                        } catch (e) {
-                            console.error('Error parsing SSE data:', e);
-                        }
-                    }
-                });
-                
+
+                                try {
+                                    const parsed = JSON.parse(data);
+                                    if (parsed.type === 'content') {
+                                        // 检测步骤信息并更新加载指示器
+                                        const stepMatch = parsed.content.match(/📝 \*\*步骤 (\d+):\*\*/);
+                                        if (stepMatch) {
+                                            const stepNumber = stepMatch[1];
+                                            $('#loadingIndicator p').text(`OpenManus 正在思考... (步骤 ${stepNumber})`);
+                                        } else if (parsed.content.includes('🤔 开始思考...')) {
+                                            $('#loadingIndicator p').text('OpenManus 正在思考... (初始化)');
+                                        } else if (parsed.content.includes('✅ **最终回复:**')) {
+                                            $('#loadingIndicator p').text('OpenManus 正在思考... (生成回复)');
+                                        }
+
+                                        appendToStreamingMessage(assistantMessageId, parsed.content);
+                                    } else if (parsed.type === 'error') {
+                                        $('#loadingIndicator').hide();
+                                        addMessage('system', '抱歉，发生了错误：' + parsed.message);
+                                        activeStreamingState = null;
+                                        clearConversationState();
+                                        return;
+                                    } else if (parsed.type === 'done') {
+                                        $('#loadingIndicator').hide();
+                                        finalizeStreamingMessage(assistantMessageId);
+                                        if (!isGuest && parsed.conversation_id) {
+                                            currentConversationId = parsed.conversation_id;
+                                            loadConversations();
+                                        }
+                                        activeStreamingState = null;
+                                        clearConversationState();
+                                        return;
+                                    }
+                                } catch (e) {
+                                    console.error('Error parsing SSE data:', e);
+                                }
+                            }
+                        });
+
+                        return readStream();
+                    });
+                }
+
                 return readStream();
+            })
+            .catch(error => {
+                $('#loadingIndicator').hide();
+                console.error('Fetch error:', error);
+                addMessage('system', '网络错误，请重试');
+                activeStreamingState = null;
+                clearConversationState();
             });
+    }
+
+    function addMessage(type, content) {
+        const messagesContainer = $('#chatMessages');
+        $('#welcomeMessage').hide();
+
+        const messageDiv = $('<div>').addClass(`message ${type}-message`);
+        const messageContent = $('<div>').addClass('message-content');
+        const messageHeader = $('<div>').addClass('message-header');
+
+        const icon = $('<i>').addClass(`fas ${type === 'user' ? 'fa-user' : type === 'assistant' ? 'fa-robot' : 'fa-info-circle'}`);
+        const sender = $('<span>').addClass('message-sender').text(type === 'user' ? '您' : type === 'assistant' ? 'OpenManus' : '系统');
+        const time = $('<span>').addClass('message-time').text(new Date().toLocaleTimeString());
+
+        // 安全处理内容，避免HTML解析错误
+        let processedContent;
+        try {
+            processedContent = processThinkingTags(content || '');
+        } catch (error) {
+            console.error('Error processing content:', error);
+            processedContent = (content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
         }
-        
-        return readStream();
-    })
-    .catch(error => {
-        $('#loadingIndicator').hide();
-        console.error('Fetch error:', error);
-        addMessage('system', '网络错误，请重试');
-        activeStreamingState = null;
-        clearConversationState();
-    });
-}
 
-function addMessage(type, content) {
-    const messagesContainer = $('#chatMessages');
-    $('#welcomeMessage').hide();
-    
-    const messageDiv = $('<div>').addClass(`message ${type}-message`);
-    const messageContent = $('<div>').addClass('message-content');
-    const messageHeader = $('<div>').addClass('message-header');
-    
-    const icon = $('<i>').addClass(`fas ${type === 'user' ? 'fa-user' : type === 'assistant' ? 'fa-robot' : 'fa-info-circle'}`);
-    const sender = $('<span>').addClass('message-sender').text(type === 'user' ? '您' : type === 'assistant' ? 'OpenManus' : '系统');
-    const time = $('<span>').addClass('message-time').text(new Date().toLocaleTimeString());
-    
-    // 安全处理内容，避免HTML解析错误
-    let processedContent;
-    try {
-        processedContent = processThinkingTags(content || '');
-    } catch (error) {
-        console.error('Error processing content:', error);
-        processedContent = (content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-    }
-    
-    const messageText = $('<div>').addClass('message-text');
-    
-    // 安全设置HTML内容
-    try {
-        messageText.html(processedContent);
-    } catch (error) {
-        console.error('Error setting HTML content:', error);
-        messageText.text(content || '');
-    }
-    
-    // 为用户消息添加编辑按钮
-    if (type === 'user') {
-        const messageActions = $('<div>').addClass('message-actions');
-        const editBtn = $('<button>').addClass('btn btn-sm btn-outline-secondary edit-message-btn')
-            .html('<i class="fas fa-edit"></i>')
-            .attr('title', '编辑消息')
-            .data('original-content', content);
-        messageActions.append(editBtn);
-        messageHeader.append(messageActions);
-    }
-    
-    messageHeader.append(icon, sender, time);
-    messageContent.append(messageHeader, messageText);
-    messageDiv.append(messageContent);
-    
-    messagesContainer.append(messageDiv);
-    messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
-}
+        const messageText = $('<div>').addClass('message-text');
 
-function addStreamingMessage(type, content, messageId) {
-    const messagesContainer = $('#chatMessages');
-    $('#welcomeMessage').hide();
-    
-    const messageDiv = $('<div>').addClass(`message ${type}-message`).attr('id', messageId);
-    const messageContent = $('<div>').addClass('message-content');
-    const messageHeader = $('<div>').addClass('message-header');
-    
-    const icon = $('<i>').addClass(`fas ${type === 'user' ? 'fa-user' : type === 'assistant' ? 'fa-robot' : 'fa-info-circle'}`);
-    const sender = $('<span>').addClass('message-sender').text(type === 'user' ? '您' : type === 'assistant' ? 'OpenManus' : '系统');
-    const time = $('<span>').addClass('message-time').text(new Date().toLocaleTimeString());
-    
-    const messageText = $('<div>').addClass('message-text');
-    const streamingContent = $('<span>').addClass('streaming-content').text(content);
-    const cursor = $('<span>').addClass('cursor').text('▋');
-    messageText.append(streamingContent, cursor);
-    
-    messageHeader.append(icon, sender, time);
-    messageContent.append(messageHeader, messageText);
-    messageDiv.append(messageContent);
-    
-    messagesContainer.append(messageDiv);
-    messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
-}
-
-function appendToStreamingMessage(messageId, content) {
-    const messageElement = $(`#${messageId} .streaming-content`);
-    if (messageElement.length) {
-        const currentContent = messageElement.text();
-        messageElement.text(currentContent + content);
-        $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
-    }
-}
-
-function finalizeStreamingMessage(messageId) {
-    const messageElement = $(`#${messageId}`);
-    if (messageElement.length) {
-        messageElement.find('.cursor').remove();
-        const content = messageElement.find('.streaming-content').text();
-        const processedContent = processThinkingTags(content);
-        messageElement.find('.message-text').html(processedContent);
-    }
-}
-
-function processThinkingTags(content) {
-    // 确保内容是字符串
-    if (typeof content !== 'string') {
-        return '';
-    }
-    
-    // 处理多个相连的Thinking标签，将它们合并
-    let processedContent = content;
-    
-    try {
-        // 匹配所有Thinking标签并处理
-        const thinkingRegex = /<Thinking>([\s\S]*?)<\/Thinking>/g;
-        let thinkingBlocks = [];
-        let match;
-        
-        while ((match = thinkingRegex.exec(content)) !== null) {
-            thinkingBlocks.push(match[1].trim());
+        // 安全设置HTML内容
+        try {
+            messageText.html(processedContent);
+        } catch (error) {
+            console.error('Error setting HTML content:', error);
+            messageText.text(content || '');
         }
-        
-        if (thinkingBlocks.length > 0) {
-            // 合并所有thinking内容
-            const combinedThinking = thinkingBlocks.join('\n\n');
-            
-            // 安全转义thinking内容
-            const escapedThinking = combinedThinking.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-            
-            // 创建可折叠的HTML结构
-            const stepId = `step_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            const thinkingHtml = `
+
+        // 为用户消息添加编辑按钮
+        if (type === 'user') {
+            const messageActions = $('<div>').addClass('message-actions');
+            const editBtn = $('<button>').addClass('btn btn-sm btn-outline-secondary edit-message-btn')
+                .html('<i class="fas fa-edit"></i>')
+                .attr('title', '编辑消息')
+                .data('original-content', content);
+            messageActions.append(editBtn);
+            messageHeader.append(messageActions);
+        }
+
+        messageHeader.append(icon, sender, time);
+        messageContent.append(messageHeader, messageText);
+        messageDiv.append(messageContent);
+
+        messagesContainer.append(messageDiv);
+        messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
+    }
+
+    function addStreamingMessage(type, content, messageId) {
+        const messagesContainer = $('#chatMessages');
+        $('#welcomeMessage').hide();
+
+        const messageDiv = $('<div>').addClass(`message ${type}-message`).attr('id', messageId);
+        const messageContent = $('<div>').addClass('message-content');
+        const messageHeader = $('<div>').addClass('message-header');
+
+        const icon = $('<i>').addClass(`fas ${type === 'user' ? 'fa-user' : type === 'assistant' ? 'fa-robot' : 'fa-info-circle'}`);
+        const sender = $('<span>').addClass('message-sender').text(type === 'user' ? '您' : type === 'assistant' ? 'OpenManus' : '系统');
+        const time = $('<span>').addClass('message-time').text(new Date().toLocaleTimeString());
+
+        const messageText = $('<div>').addClass('message-text');
+        const streamingContent = $('<span>').addClass('streaming-content').text(content);
+        const cursor = $('<span>').addClass('cursor').text('▋');
+        messageText.append(streamingContent, cursor);
+
+        messageHeader.append(icon, sender, time);
+        messageContent.append(messageHeader, messageText);
+        messageDiv.append(messageContent);
+
+        messagesContainer.append(messageDiv);
+        messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
+    }
+
+    function appendToStreamingMessage(messageId, content) {
+        const messageElement = $(`#${messageId} .streaming-content`);
+        if (messageElement.length) {
+            const currentContent = messageElement.text();
+            messageElement.text(currentContent + content);
+            $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+        }
+    }
+
+    function finalizeStreamingMessage(messageId) {
+        const messageElement = $(`#${messageId}`);
+        if (messageElement.length) {
+            messageElement.find('.cursor').remove();
+            const content = messageElement.find('.streaming-content').text();
+            const processedContent = processThinkingTags(content);
+            messageElement.find('.message-text').html(processedContent);
+        }
+    }
+
+    function processThinkingTags(content) {
+        // 确保内容是字符串
+        if (typeof content !== 'string') {
+            return '';
+        }
+
+        // 处理多个相连的Thinking标签，将它们合并
+        let processedContent = content;
+
+        try {
+            // 匹配所有Thinking标签并处理
+            const thinkingRegex = /<Thinking>([\s\S]*?)<\/Thinking>/g;
+            let thinkingBlocks = [];
+            let match;
+
+            while ((match = thinkingRegex.exec(content)) !== null) {
+                thinkingBlocks.push(match[1].trim());
+            }
+
+            if (thinkingBlocks.length > 0) {
+                // 合并所有thinking内容
+                const combinedThinking = thinkingBlocks.join('\n\n');
+
+                // 安全转义thinking内容
+                const escapedThinking = combinedThinking.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+
+                // 创建可折叠的HTML结构
+                const stepId = `step_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const thinkingHtml = `
                 <div class="thinking-container" data-step-id="${stepId}">
                     <div class="thinking-header" onclick="toggleThinking(this)">
                         <i class="fas fa-brain thinking-icon"></i>
@@ -1582,80 +1658,80 @@ function processThinkingTags(content) {
                     </div>
                 </div>
             `;
-            
-            // 移除原始的Thinking标签并替换为HTML结构
-            processedContent = content.replace(thinkingRegex, '').trim();
-            
-            // 安全转义剩余内容
-            if (processedContent) {
-                const escapedContent = processedContent.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-                processedContent = thinkingHtml + '<br><br>' + escapedContent;
+
+                // 移除原始的Thinking标签并替换为HTML结构
+                processedContent = content.replace(thinkingRegex, '').trim();
+
+                // 安全转义剩余内容
+                if (processedContent) {
+                    const escapedContent = processedContent.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+                    processedContent = thinkingHtml + '<br><br>' + escapedContent;
+                } else {
+                    processedContent = thinkingHtml;
+                }
             } else {
-                processedContent = thinkingHtml;
+                // 没有thinking标签，安全处理换行和HTML字符
+                processedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
             }
-        } else {
-            // 没有thinking标签，安全处理换行和HTML字符
+        } catch (error) {
+            console.error('Error in processThinkingTags:', error);
+            // 发生错误时，安全转义所有内容
             processedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
         }
-    } catch (error) {
-        console.error('Error in processThinkingTags:', error);
-        // 发生错误时，安全转义所有内容
-        processedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-    }
-    
-    return processedContent;
-}
 
-function toggleThinking(header) {
-    const container = $(header).closest('.thinking-container');
-    const content = container.find('.thinking-content');
-    const toggle = container.find('.thinking-toggle');
-    
-    if (content.is(':visible')) {
-        content.slideUp(200);
-        toggle.removeClass('fa-chevron-up').addClass('fa-chevron-down');
-    } else {
-        content.slideDown(200);
-        toggle.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+        return processedContent;
     }
-    
-    // 保存当前对话的状态
-    setTimeout(() => {
-        saveCurrentConversationState();
-    }, 250);
-}
 
-function loadConversations() {
-    if (isGuest) return;
-    
-    $.ajax({
-        url: '/api/conversations',
-        method: 'GET',
-        success: function(response) {
-            if (response.code === 200) {
-                conversations = response.data.conversations;
-                renderConversations();
-                enableChat();
-            }
-        },
-        error: function() {
-            console.error('Failed to load conversations');
+    function toggleThinking(header) {
+        const container = $(header).closest('.thinking-container');
+        const content = container.find('.thinking-content');
+        const toggle = container.find('.thinking-toggle');
+
+        if (content.is(':visible')) {
+            content.slideUp(200);
+            toggle.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+        } else {
+            content.slideDown(200);
+            toggle.removeClass('fa-chevron-down').addClass('fa-chevron-up');
         }
-    });
-}
 
-function renderConversations() {
-    const container = $('#conversationsList');
-    container.empty();
-    
-    if (conversations.length === 0) {
-        container.append('<p class="text-muted small">暂无对话</p>');
-        return;
+        // 保存当前对话的状态
+        setTimeout(() => {
+            saveCurrentConversationState();
+        }, 250);
     }
-    
-    conversations.forEach(conv => {
-        const isActive = conv.id === currentConversationId;
-        const convHtml = `
+
+    function loadConversations() {
+        if (isGuest) return;
+
+        $.ajax({
+            url: '/api/conversations',
+            method: 'GET',
+            success: function (response) {
+                if (response.code === 200) {
+                    conversations = response.data.conversations;
+                    renderConversations();
+                    enableChat();
+                }
+            },
+            error: function () {
+                console.error('Failed to load conversations');
+            }
+        });
+    }
+
+    function renderConversations() {
+        const container = $('#conversationsList');
+        container.empty();
+
+        if (conversations.length === 0) {
+            container.append('<p class="text-muted small">暂无对话</p>');
+            return;
+        }
+
+        conversations.forEach(conv => {
+            const isActive = conv.id === currentConversationId;
+            const convHtml = `
             <div class="conversation-item ${isActive ? 'active' : ''}" data-id="${conv.id}">
                 <div class="conversation-content">
                     <div class="conversation-title">${conv.title}</div>
@@ -1668,301 +1744,348 @@ function renderConversations() {
                 </div>
             </div>
         `;
-        container.append(convHtml);
-    });
-    
-    // 使用事件委托绑定点击事件
-    $('#conversationsList').off('click', '.conversation-item .conversation-content').on('click', '.conversation-item .conversation-content', function() {
-        const convId = $(this).parent().data('id');
-        selectConversation(convId);
-    });
-    
-    // 使用事件委托绑定删除按钮事件
-    $('#conversationsList').off('click', '.delete-conversation').on('click', '.delete-conversation', function(e) {
-        e.stopPropagation();
-        const convId = $(this).data('id');
-        const conv = conversations.find(c => c.id === convId);
-        showConfirm(
-            `确定要删除对话 "${conv.title}" 吗？此操作不可撤销。`,
-            '删除对话',
-            () => deleteConversation(convId)
-        );
-    });
-}
+            container.append(convHtml);
+        });
 
-function selectConversation(convId) {
-    // 保存当前对话的状态
-    if (currentConversationId && currentConversationId !== convId) {
-        saveCurrentConversationState();
-    }
-    
-    currentConversationId = convId;
-    const conv = conversations.find(c => c.id === convId);
-    if (conv) {
-        $('#conversationTitle').text(conv.title);
-        loadMessages(convId);
-        
-        // 恢复目标对话的状态
-        restoreSpecificConversationState(convId);
-    }
-    renderConversations();
-}
+        // 使用事件委托绑定点击事件
+        $('#conversationsList').off('click', '.conversation-item .conversation-content').on('click', '.conversation-item .conversation-content', function () {
+            const convId = $(this).parent().data('id');
+            selectConversation(convId);
+        });
 
-function loadMessages(convId) {
-    $.ajax({
-        url: `/api/conversations/${convId}/messages`,
-        method: 'GET',
-        success: function(response) {
-            if (response.code === 200) {
-                const messagesContainer = $('#chatMessages');
-                messagesContainer.empty();
-                $('#welcomeMessage').hide();
-                
-                response.data.messages.forEach(msg => {
-                    addMessage(msg.role, msg.content);
-                });
-                
-                // 消息加载完成后恢复对话状态
-                setTimeout(() => {
-                    restoreSpecificConversationState(convId);
-                }, 200);
-            }
-        },
-        error: function() {
-            console.error('Failed to load messages');
+        // 使用事件委托绑定删除按钮事件
+        $('#conversationsList').off('click', '.delete-conversation').on('click', '.delete-conversation', function (e) {
+            e.stopPropagation();
+            const convId = $(this).data('id');
+            const conv = conversations.find(c => c.id === convId);
+            showConfirm(
+                `确定要删除对话 "${conv.title}" 吗？此操作不可撤销。`,
+                '删除对话',
+                () => deleteConversation(convId)
+            );
+        });
+    }
+
+    function selectConversation(convId) {
+        // 保存当前对话的状态
+        if (currentConversationId && currentConversationId !== convId) {
+            saveCurrentConversationState();
         }
-    });
-}
 
-function deleteConversation(convId) {
-    $.ajax({
-        url: `/api/conversations/${convId}`,
-        method: 'DELETE',
-        success: function(response) {
-            if (response.code === 200) {
-                // 从本地数组中移除对话
-                conversations = conversations.filter(c => c.id !== convId);
-                
-                // 如果删除的是当前对话，清空聊天区域
-                if (currentConversationId === convId) {
-                    currentConversationId = null;
-                    $('#conversationTitle').text('选择对话');
+        currentConversationId = convId;
+        const conv = conversations.find(c => c.id === convId);
+        if (conv) {
+            $('#conversationTitle').text(conv.title);
+            loadMessages(convId);
+
+            // 恢复目标对话的状态
+            restoreSpecificConversationState(convId);
+        }
+        renderConversations();
+    }
+
+    function loadMessages(convId) {
+        $.ajax({
+            url: `/api/conversations/${convId}/messages`,
+            method: 'GET',
+            success: function (response) {
+                if (response.code === 200) {
+                    const messagesContainer = $('#chatMessages');
+                    messagesContainer.empty();
+                    $('#welcomeMessage').hide();
+
+                    response.data.messages.forEach(msg => {
+                        addMessage(msg.role, msg.content);
+                    });
+
+                    // 消息加载完成后恢复对话状态
+                    setTimeout(() => {
+                        restoreSpecificConversationState(convId);
+                    }, 200);
+                }
+            },
+            error: function () {
+                console.error('Failed to load messages');
+            }
+        });
+    }
+
+    function deleteConversation(convId) {
+        $.ajax({
+            url: `/api/conversations/${convId}`,
+            method: 'DELETE',
+            success: function (response) {
+                if (response.code === 200) {
+                    // 从本地数组中移除对话
+                    conversations = conversations.filter(c => c.id !== convId);
+
+                    // 如果删除的是当前对话，清空聊天区域
+                    if (currentConversationId === convId) {
+                        currentConversationId = null;
+                        $('#conversationTitle').text('选择对话');
+                        $('#chatMessages').empty();
+                        $('#welcomeMessage').show();
+                    }
+
+                    // 清理对话状态
+                    delete conversationStates[convId];
+
+                    // 重新渲染对话列表
+                    renderConversations();
+
+                    // 显示成功消息
+                    showTips('对话删除成功', 'success');
+                } else {
+                    showTips(response.message || '删除对话失败', 'error');
+                }
+            },
+            error: function () {
+                showTips('删除对话失败，请稍后重试', 'error');
+            }
+        });
+    }
+
+    function createNewConversation(title) {
+        $.ajax({
+            url: '/api/conversations',
+            method: 'POST',
+            data: { title: title },
+            success: function (response) {
+                if (response.code === 200) {
+                    $('#newChatModal').modal('hide');
+                    $('#chatTitleInput').val('');
+                    currentConversationId = response.data.conversation_id;
+                    $('#conversationTitle').text(title);
+                    loadConversations();
+
+                    // 清空消息区域
                     $('#chatMessages').empty();
                     $('#welcomeMessage').show();
+                } else {
+                    showTips('创建对话失败：' + (response.message || '未知错误'), 'error');
                 }
-                
-                // 清理对话状态
-                delete conversationStates[convId];
-                
-                // 重新渲染对话列表
-                renderConversations();
-                
-                // 显示成功消息
-                showTips('对话删除成功', 'success');
-            } else {
-                showTips(response.message || '删除对话失败', 'error');
+            },
+            error: function () {
+                showTips('创建对话失败，请重试', 'error');
             }
-        },
-        error: function() {
-            showTips('删除对话失败，请稍后重试', 'error');
-        }
-    });
-}
+        });
+    }
 
-function createNewConversation(title) {
-    $.ajax({
-        url: '/api/conversations',
-        method: 'POST',
-        data: { title: title },
-        success: function(response) {
-            if (response.code === 200) {
-                $('#newChatModal').modal('hide');
-                $('#chatTitleInput').val('');
-                currentConversationId = response.data.conversation_id;
-                $('#conversationTitle').text(title);
-                loadConversations();
-                
-                // 清空消息区域
-                $('#chatMessages').empty();
-                $('#welcomeMessage').show();
-            } else {
-                showTips('创建对话失败：' + (response.message || '未知错误'), 'error');
-            }
-        },
-        error: function() {
-            showTips('创建对话失败，请重试', 'error');
-        }
-    });
-}
-
-function createNewConversationAndSend(message) {
-    // 使用消息的前20个字符作为对话标题
-    const title = message.length > 20 ? message.substring(0, 20) + '...' : message;
-    
-    $.ajax({
-        url: '/api/conversations',
-        method: 'POST',
-        data: { title: title },
-        success: function(response) {
-            if (response.code === 200) {
-                currentConversationId = response.data.conversation_id;
-                $('#conversationTitle').text(title);
-                loadConversations();
-                
-                // 清空消息区域
-                $('#chatMessages').empty();
-                $('#welcomeMessage').hide();
-                
-                // 立即发送消息
-                sendMessage();
-            } else {
-                showTips('创建对话失败：' + (response.message || '未知错误'), 'error');
-            }
-        },
-        error: function() {
-            showTips('创建对话失败，请重试', 'error');
-        }
-    });
-}
-
-function enableChat() {
-    $('#messageInput').prop('disabled', false);
-    $('#sendBtn').prop('disabled', false);
-}
-
-
-
-function checkUserAuth() {
-    $.ajax({
-        url: '/api/check-auth',
-        method: 'GET',
-        success: function(response) {
-            if (response.code === 200 && response.data.authenticated) {
-                $('#user-info').show();
-                // 优先显示昵称，如果没有昵称则显示用户名
-                const displayName = response.data.display_name || response.data.username;
-                $('#username-display').text(displayName);
-                
-                // 如果是管理员或超级管理员，显示管理面板链接
-                if (response.data.role === 'admin' || response.data.role === 'super_admin') {
-                    if ($('#admin-link').length === 0) {
-                        $('#user-info').append('<a href="/admin" id="admin-link" class="btn btn-sm btn-outline-primary ms-2"><i class="fas fa-cog me-1"></i>管理面板</a>');
-                    }
-                }
-            }
-        },
-        error: function() {
-            console.log('用户未登录');
-        }
-    });
-}
-
-function setupLoginEvents() {
-    // 登录按钮
-    $('#loginBtn').click(function() {
-        const username = $('#username').val();
-        const password = $('#password').val();
-        const remember = $('#remember').is(':checked');
-
-        if (!username || !password) {
-            showTips('请输入用户名和密码', 'warning');
-            return;
-        }
+    function createNewConversationAndSend(message) {
+        // 使用消息的前20个字符作为对话标题
+        const title = message.length > 20 ? message.substring(0, 20) + '...' : message;
 
         $.ajax({
-            url: '/login',
+            url: '/api/conversations',
             method: 'POST',
-            data: {
-                username: username,
-                password: password,
-                remember: remember
-            },
-            success: function(response) {
+            data: { title: title },
+            success: function (response) {
                 if (response.code === 200) {
-                    $('#loginModal').modal('hide');
-                    isGuest = false;
+                    currentConversationId = response.data.conversation_id;
+                    $('#conversationTitle').text(title);
                     loadConversations();
-                    checkUserAuth();
-                    // 发送之前输入的消息
+
+                    // 清空消息区域
+                    $('#chatMessages').empty();
+                    $('#welcomeMessage').hide();
+
+                    // 立即发送消息
                     sendMessage();
                 } else {
-                    showTips(response.message || '登录失败', 'error');
+                    showTips('创建对话失败：' + (response.message || '未知错误'), 'error');
                 }
             },
-            error: function() {
-                showTips('登录请求失败，请重试', 'error');
+            error: function () {
+                showTips('创建对话失败，请重试', 'error');
             }
         });
-    });
-
-    // 注册按钮
-    $('#registerBtn').click(function() {
-        $('#loginModal').modal('hide');
-        $('#registerModal').modal('show');
-    });
-
-    // 注册提交
-    $('#submitRegisterBtn').click(function() {
-        const username = $('#regUsername').val();
-        const password = $('#regPassword').val();
-        const confirmPassword = $('#confirmPassword').val();
-
-        if (!username || !password || !confirmPassword) {
-            showTips('请填写所有字段', 'warning');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            showTips('密码不匹配', 'warning');
-            return;
-        }
-
-        $.ajax({
-            url: '/register',
-            method: 'POST',
-            data: {
-                username: username,
-                password: password
-            },
-            success: function(response) {
-                if (response.code === 200) {
-                    $('#registerModal').modal('hide');
-                    showTips('注册成功！请登录', 'success');
-                    $('#loginModal').modal('show');
-                } else {
-                    showTips(response.message || '注册失败', 'error');
-                }
-            },
-            error: function() {
-                showTips('注册请求失败，请重试', 'error');
-            }
-        });
-    });
-
-    // 游客访问
-    $('#guestBtn').click(function() {
-        $('#loginModal').modal('hide');
-        isGuest = true;
-        $('#conversationTitle').text('游客模式');
-        $('#chatSubtitle').text('游客访问 - 数据不会保存');
-        // 发送之前输入的消息
-        sendMessage();
-    });
-}
-
-// 消息编辑功能
-$(document).on('click', '.edit-message-btn', function() {
-    const messageDiv = $(this).closest('.message');
-    const messageText = messageDiv.find('.message-text');
-    const originalContent = $(this).data('original-content');
-    
-    // 如果已经在编辑状态，则不重复创建编辑表单
-    if (messageDiv.find('.message-edit-form').length > 0) {
-        return;
     }
-    
-    // 创建编辑表单
-    const editForm = $(`
+
+    function enableChat() {
+        $('#messageInput').prop('disabled', false);
+        $('#sendBtn').prop('disabled', false);
+    }
+
+    // 加载模型列表
+    function loadModelList() {
+        // 通过后端API获取模型列表
+        $.ajax({
+            url: '/api/models',
+            method: 'GET',
+            timeout: 5000, // 5秒超时
+            success: function (response) {
+                if (response && response.data && Array.isArray(response.data)) {
+                    const modelSelect = $('#modelSelect');
+                    modelSelect.empty();
+                    modelSelect.append('<option value="">选择模型...</option>');
+
+                    response.data.forEach(function (model) {
+                        if (model.id) {
+                            modelSelect.append(`<option value="${model.id}">${model.id}</option>`);
+                        }
+                    });
+
+                    // 如果只有一个模型，自动选择
+                    if (response.data.length === 1) {
+                        modelSelect.val(response.data[0].id);
+                    }
+
+                    console.log('模型列表加载成功:', response.data.length + ' 个模型');
+                    showTips('模型列表加载成功，共 ' + response.data.length + ' 个模型', 'success');
+                } else {
+                    console.warn('模型列表格式不正确:', response);
+                    showTips('模型列表格式不正确', 'warning');
+                }
+            },
+            error: function (xhr, status, error) {
+                console.warn('无法获取模型列表，可能LM Studio未启动或配置不正确:', error);
+                // 添加默认选项提示用户
+                const modelSelect = $('#modelSelect');
+                modelSelect.empty();
+                modelSelect.append('<option value="">LM Studio未连接</option>');
+                showTips('无法连接到LM Studio，请检查是否已启动', 'error');
+            }
+        });
+    }
+
+    // 获取当前选择的模型
+    function getSelectedModel() {
+        return $('#modelSelect').val();
+    }
+
+
+
+    function checkUserAuth() {
+        $.ajax({
+            url: '/api/check-auth',
+            method: 'GET',
+            success: function (response) {
+                if (response.code === 200 && response.data.authenticated) {
+                    $('#user-info').show();
+                    // 优先显示昵称，如果没有昵称则显示用户名
+                    const displayName = response.data.display_name || response.data.username;
+                    $('#username-display').text(displayName);
+
+                    // 如果是管理员或超级管理员，显示管理面板链接
+                    if (response.data.role === 'admin' || response.data.role === 'super_admin') {
+                        if ($('#admin-link').length === 0) {
+                            $('#user-info').append('<a href="/admin" id="admin-link" class="btn btn-sm btn-outline-primary ms-2"><i class="fas fa-cog me-1"></i>管理面板</a>');
+                        }
+                    }
+                }
+            },
+            error: function () {
+                console.log('用户未登录');
+            }
+        });
+    }
+
+    function setupLoginEvents() {
+        // 登录按钮
+        $('#loginBtn').click(function () {
+            const username = $('#username').val();
+            const password = $('#password').val();
+            const remember = $('#remember').is(':checked');
+
+            if (!username || !password) {
+                showTips('请输入用户名和密码', 'warning');
+                return;
+            }
+
+            $.ajax({
+                url: '/login',
+                method: 'POST',
+                data: {
+                    username: username,
+                    password: password,
+                    remember: remember
+                },
+                success: function (response) {
+                    if (response.code === 200) {
+                        $('#loginModal').modal('hide');
+                        isGuest = false;
+                        loadConversations();
+                        checkUserAuth();
+                        // 发送之前输入的消息
+                        sendMessage();
+                    } else {
+                        showTips(response.message || '登录失败', 'error');
+                    }
+                },
+                error: function () {
+                    showTips('登录请求失败，请重试', 'error');
+                }
+            });
+        });
+
+        // 注册按钮
+        $('#registerBtn').click(function () {
+            $('#loginModal').modal('hide');
+            $('#registerModal').modal('show');
+        });
+
+        // 注册提交
+        $('#submitRegisterBtn').click(function () {
+            const username = $('#regUsername').val();
+            const password = $('#regPassword').val();
+            const confirmPassword = $('#confirmPassword').val();
+
+            if (!username || !password || !confirmPassword) {
+                showTips('请填写所有字段', 'warning');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showTips('密码不匹配', 'warning');
+                return;
+            }
+
+            $.ajax({
+                url: '/register',
+                method: 'POST',
+                data: {
+                    username: username,
+                    password: password
+                },
+                success: function (response) {
+                    if (response.code === 200) {
+                        $('#registerModal').modal('hide');
+                        showTips('注册成功！请登录', 'success');
+                        $('#loginModal').modal('show');
+                    } else {
+                        showTips(response.message || '注册失败', 'error');
+                    }
+                },
+                error: function () {
+                    showTips('注册请求失败，请重试', 'error');
+                }
+            });
+        });
+
+        // 游客访问
+        $('#guestBtn').click(function () {
+            $('#loginModal').modal('hide');
+            isGuest = true;
+            $('#conversationTitle').text('游客模式');
+            $('#chatSubtitle').text('游客访问 - 数据不会保存');
+            // 发送之前输入的消息
+            sendMessage();
+        });
+    }
+
+    // 消息编辑功能
+    $(document).on('click', '.edit-message-btn', function () {
+        const messageDiv = $(this).closest('.message');
+        const messageText = messageDiv.find('.message-text');
+        const originalContent = $(this).data('original-content');
+
+        // 如果已经在编辑状态，则不重复创建编辑表单
+        if (messageDiv.find('.message-edit-form').length > 0) {
+            return;
+        }
+
+        // 创建编辑表单
+        const editForm = $(`
         <div class="message-edit-form">
             <textarea class="message-edit-textarea" placeholder="编辑您的消息...">${originalContent}</textarea>
             <div class="message-edit-actions">
@@ -1971,221 +2094,232 @@ $(document).on('click', '.edit-message-btn', function() {
             </div>
         </div>
     `);
-    
-    // 隐藏原始消息文本
-    messageText.hide();
-    
-    // 添加编辑表单
-    messageDiv.find('.message-content').append(editForm);
-    
-    // 聚焦到文本框
-    editForm.find('.message-edit-textarea').focus();
-});
 
-// 取消编辑
-$(document).on('click', '.cancel-edit-btn', function() {
-    const messageDiv = $(this).closest('.message');
-    const messageText = messageDiv.find('.message-text');
-    const editForm = messageDiv.find('.message-edit-form');
-    
-    // 显示原始消息文本
-    messageText.show();
-    
-    // 移除编辑表单
-    editForm.remove();
-});
+        // 隐藏原始消息文本
+        messageText.hide();
 
-// 保存编辑并重新发送
-$(document).on('click', '.save-edit-btn', function() {
-    const messageDiv = $(this).closest('.message');
-    const messageText = messageDiv.find('.message-text');
-    const editForm = messageDiv.find('.message-edit-form');
-    const newContent = editForm.find('.message-edit-textarea').val().trim();
-    
-    if (!newContent) {
-        showTips('消息内容不能为空', 'warning');
-        return;
-    }
-    
-    // 更新消息内容
-    messageText.text(newContent).show();
-    
-    // 更新编辑按钮的原始内容数据
-    messageDiv.find('.edit-message-btn').data('original-content', newContent);
-    
-    // 移除编辑表单
-    editForm.remove();
-    
-    // 清除所有对话消息
-    $('#chatMessages').empty();
-    
-    // 显示欢迎消息
-    $('#welcomeMessage').show();
-    
-    // 添加编辑后的用户消息
-    addMessage('user', newContent);
-    
-    // 重新发送消息
-    if (currentConversationId || isGuest) {
-        sendMessageWithContent(newContent);
-    } else {
-        // 如果没有当前对话，创建新对话并发送
-        createNewConversationAndSend(newContent);
-    }
-    
-    showTips('消息已更新并重新发送', 'success');
-});
+        // 添加编辑表单
+        messageDiv.find('.message-content').append(editForm);
 
-// 发送指定内容的消息
-function sendMessageWithContent(content) {
-    if (!content.trim()) return;
-    
-    // 显示加载指示器
-    $('#loadingIndicator').show();
-    $('#sendBtn').prop('disabled', true);
-    
-    // 创建助手消息容器，准备接收流式输出
-    const assistantMessageId = 'msg-' + Date.now();
-    addStreamingMessage('assistant', '', assistantMessageId);
-    
-    // 保存对话状态
-    activeStreamingState = {
-        messageId: assistantMessageId,
-        conversationId: currentConversationId,
-        userMessage: content,
-        isActive: true,
-        timestamp: Date.now()
-    };
-    saveConversationState(activeStreamingState);
-    
-    // 发送消息到后端并接收流式响应
-    const endpoint = isGuest ? '/api/chat-guest-stream' : '/api/chat-stream';
-    const data = isGuest ? { message: content } : { 
-        message: content, 
-        conversation_id: currentConversationId 
-    };
-    
-    // 使用fetch API支持流式响应
-    fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams(data)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+        // 聚焦到文本框
+        editForm.find('.message-edit-textarea').focus();
+    });
+
+    // 取消编辑
+    $(document).on('click', '.cancel-edit-btn', function () {
+        const messageDiv = $(this).closest('.message');
+        const messageText = messageDiv.find('.message-text');
+        const editForm = messageDiv.find('.message-edit-form');
+
+        // 显示原始消息文本
+        messageText.show();
+
+        // 移除编辑表单
+        editForm.remove();
+    });
+
+    // 保存编辑并重新发送
+    $(document).on('click', '.save-edit-btn', function () {
+        const messageDiv = $(this).closest('.message');
+        const messageText = messageDiv.find('.message-text');
+        const editForm = messageDiv.find('.message-edit-form');
+        const newContent = editForm.find('.message-edit-textarea').val().trim();
+
+        if (!newContent) {
+            showTips('消息内容不能为空', 'warning');
+            return;
         }
-        
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        
-        function readStream() {
-            return reader.read().then(({ done, value }) => {
-                if (done) {
-                    $('#loadingIndicator').hide();
-                    $('#sendBtn').prop('disabled', false);
-                    activeStreamingState = null;
-                    clearConversationState();
-                    return;
+
+        // 更新消息内容
+        messageText.text(newContent).show();
+
+        // 更新编辑按钮的原始内容数据
+        messageDiv.find('.edit-message-btn').data('original-content', newContent);
+
+        // 移除编辑表单
+        editForm.remove();
+
+        // 清除所有对话消息
+        $('#chatMessages').empty();
+
+        // 显示欢迎消息
+        $('#welcomeMessage').show();
+
+        // 添加编辑后的用户消息
+        addMessage('user', newContent);
+
+        // 重新发送消息
+        if (currentConversationId || isGuest) {
+            sendMessageWithContent(newContent);
+        } else {
+            // 如果没有当前对话，创建新对话并发送
+            createNewConversationAndSend(newContent);
+        }
+
+        showTips('消息已更新并重新发送', 'success');
+    });
+
+    // 发送指定内容的消息
+    function sendMessageWithContent(content) {
+        if (!content.trim()) return;
+
+        // 检查是否选择了模型
+        const selectedModel = getSelectedModel();
+        if (!selectedModel) {
+            showTips('请先选择一个模型', 'warning');
+            return;
+        }
+
+        // 显示加载指示器
+        $('#loadingIndicator').show();
+        $('#sendBtn').prop('disabled', true);
+
+        // 创建助手消息容器，准备接收流式输出
+        const assistantMessageId = 'msg-' + Date.now();
+        addStreamingMessage('assistant', '', assistantMessageId);
+
+        // 保存对话状态
+        activeStreamingState = {
+            messageId: assistantMessageId,
+            conversationId: currentConversationId,
+            userMessage: content,
+            isActive: true,
+            timestamp: Date.now()
+        };
+        saveConversationState(activeStreamingState);
+
+        // 发送消息到后端并接收流式响应
+        const endpoint = isGuest ? '/api/chat-guest-stream' : '/api/chat-stream';
+        const data = isGuest ? {
+            message: content,
+            model: selectedModel
+        } : {
+            message: content,
+            conversation_id: currentConversationId,
+            model: selectedModel
+        };
+
+        // 使用fetch API支持流式响应
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(data)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-                
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop(); // 保留不完整的行
-                
-                lines.forEach(line => {
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(6);
-                        if (data === '[DONE]') {
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                function readStream() {
+                    return reader.read().then(({ done, value }) => {
+                        if (done) {
                             $('#loadingIndicator').hide();
                             $('#sendBtn').prop('disabled', false);
                             activeStreamingState = null;
                             clearConversationState();
                             return;
                         }
-                        
-                        try {
-                            const parsed = JSON.parse(data);
-                            if (parsed.type === 'content') {
-                                // 检测步骤信息并更新加载指示器
-                                const stepMatch = parsed.content.match(/📝 \*\*步骤 (\d+):\*\*/);
-                                if (stepMatch) {
-                                    const stepNumber = stepMatch[1];
-                                    $('#loadingIndicator p').text(`OpenManus 正在思考... (步骤 ${stepNumber})`);
-                                } else if (parsed.content.includes('🤔 开始思考...')) {
-                                    $('#loadingIndicator p').text('OpenManus 正在思考... (初始化)');
-                                } else if (parsed.content.includes('✅ **最终回复:**')) {
-                                    $('#loadingIndicator p').text('OpenManus 正在思考... (生成回复)');
-                                }
-                                
-                                appendToStreamingMessage(assistantMessageId, parsed.content);
-                            } else if (parsed.type === 'error') {
-                                $('#loadingIndicator').hide();
-                                $('#sendBtn').prop('disabled', false);
-                                addMessage('system', '抱歉，发生了错误：' + parsed.message);
-                                activeStreamingState = null;
-                                clearConversationState();
-                                return;
-                            } else if (parsed.type === 'done') {
-                                 $('#loadingIndicator').hide();
-                                 $('#sendBtn').prop('disabled', false);
-                                 finalizeStreamingMessage(assistantMessageId);
-                                 if (!isGuest && parsed.conversation_id) {
-                                     currentConversationId = parsed.conversation_id;
-                                     loadConversations();
-                                 }
-                                 activeStreamingState = null;
-                                 clearConversationState();
-                                 return;
-                             }
-                        } catch (e) {
-                            console.error('Error parsing SSE data:', e);
-                        }
-                    }
-                });
-                
-                return readStream();
-            });
-        }
-        
-        return readStream();
-    })
-    .catch(error => {
-        $('#loadingIndicator').hide();
-        $('#sendBtn').prop('disabled', false);
-        console.error('Fetch error:', error);
-        activeStreamingState = null;
-        clearConversationState();
-        addMessage('system', '网络错误，请重试');
-    });
-}
 
-// 手动恢复对话
-function resumeConversationManually() {
-    const savedState = window.pendingResumeState;
-    if (savedState) {
-        // 移除提示框
-        $('.resume-conversation-alert').remove();
-        
-        // 恢复对话
-        if (savedState.messageId && savedState.userMessage) {
-            resumeStreamingConversation(savedState);
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop(); // 保留不完整的行
+
+                        lines.forEach(line => {
+                            if (line.startsWith('data: ')) {
+                                const data = line.slice(6);
+                                if (data === '[DONE]') {
+                                    $('#loadingIndicator').hide();
+                                    $('#sendBtn').prop('disabled', false);
+                                    activeStreamingState = null;
+                                    clearConversationState();
+                                    return;
+                                }
+
+                                try {
+                                    const parsed = JSON.parse(data);
+                                    if (parsed.type === 'content') {
+                                        // 检测步骤信息并更新加载指示器
+                                        const stepMatch = parsed.content.match(/📝 \*\*步骤 (\d+):\*\*/);
+                                        if (stepMatch) {
+                                            const stepNumber = stepMatch[1];
+                                            $('#loadingIndicator p').text(`OpenManus 正在思考... (步骤 ${stepNumber})`);
+                                        } else if (parsed.content.includes('🤔 开始思考...')) {
+                                            $('#loadingIndicator p').text('OpenManus 正在思考... (初始化)');
+                                        } else if (parsed.content.includes('✅ **最终回复:**')) {
+                                            $('#loadingIndicator p').text('OpenManus 正在思考... (生成回复)');
+                                        }
+
+                                        appendToStreamingMessage(assistantMessageId, parsed.content);
+                                    } else if (parsed.type === 'error') {
+                                        $('#loadingIndicator').hide();
+                                        $('#sendBtn').prop('disabled', false);
+                                        addMessage('system', '抱歉，发生了错误：' + parsed.message);
+                                        activeStreamingState = null;
+                                        clearConversationState();
+                                        return;
+                                    } else if (parsed.type === 'done') {
+                                        $('#loadingIndicator').hide();
+                                        $('#sendBtn').prop('disabled', false);
+                                        finalizeStreamingMessage(assistantMessageId);
+                                        if (!isGuest && parsed.conversation_id) {
+                                            currentConversationId = parsed.conversation_id;
+                                            loadConversations();
+                                        }
+                                        activeStreamingState = null;
+                                        clearConversationState();
+                                        return;
+                                    }
+                                } catch (e) {
+                                    console.error('Error parsing SSE data:', e);
+                                }
+                            }
+                        });
+
+                        return readStream();
+                    });
+                }
+
+                return readStream();
+            })
+            .catch(error => {
+                $('#loadingIndicator').hide();
+                $('#sendBtn').prop('disabled', false);
+                console.error('Fetch error:', error);
+                activeStreamingState = null;
+                clearConversationState();
+                addMessage('system', '网络错误，请重试');
+            });
+    }
+
+    // 手动恢复对话
+    function resumeConversationManually() {
+        const savedState = window.pendingResumeState;
+        if (savedState) {
+            // 移除提示框
+            $('.resume-conversation-alert').remove();
+
+            // 恢复对话
+            if (savedState.messageId && savedState.userMessage) {
+                resumeStreamingConversation(savedState);
+            }
+
+            // 清除临时状态
+            window.pendingResumeState = null;
         }
-        
-        // 清除临时状态
+    }
+
+    // 忽略恢复提示
+    function dismissResumeAlert() {
+        $('.resume-conversation-alert').remove();
+        clearConversationState();
         window.pendingResumeState = null;
     }
-}
-
-// 忽略恢复提示
-function dismissResumeAlert() {
-    $('.resume-conversation-alert').remove();
-    clearConversationState();
-    window.pendingResumeState = null;
-}
 
 </script>
 {% endblock %}

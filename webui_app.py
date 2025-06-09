@@ -1224,6 +1224,7 @@ class OpenManusWebUI:
 
             message = request.form.get("message")
             conversation_id = request.form.get("conversation_id")
+            selected_model = request.form.get("model")  # 获取选择的模型
 
             if not message:
                 return jsonify({"success": False, "data": None, "message": "消息不能为空", "code": 400})
@@ -1270,6 +1271,7 @@ class OpenManusWebUI:
         def api_chat_guest_stream():
             """游客流式聊天API，不保存对话记录"""
             message = request.form.get("message")
+            selected_model = request.form.get("model")  # 获取选择的模型
 
             if not message:
                 return jsonify({"success": False, "data": None, "message": "消息不能为空", "code": 400})
@@ -1290,6 +1292,23 @@ class OpenManusWebUI:
                     yield f"data: {json.dumps({'type': 'error', 'message': '处理消息时发生错误'})}\n\n"
 
             return Response(generate(), mimetype='text/plain')
+
+        @self.app.route("/api/models", methods=["GET"])
+        def api_get_models():
+            """获取LM Studio模型列表"""
+            try:
+                import requests
+                # 从配置中获取LM Studio的base_url
+                base_url = "http://localhost:1234/v1"  # 默认LM Studio地址
+                
+                response = requests.get(f"{base_url}/models", timeout=5)
+                if response.status_code == 200:
+                    return jsonify(response.json())
+                else:
+                    return jsonify({"error": "Failed to fetch models", "status_code": response.status_code}), response.status_code
+            except Exception as e:
+                logger.error(f"Error fetching models: {e}")
+                return jsonify({"error": "LM Studio connection failed", "message": str(e)}), 500
 
         @self.app.route("/api/check-auth", methods=["GET"])
         def api_check_auth():
